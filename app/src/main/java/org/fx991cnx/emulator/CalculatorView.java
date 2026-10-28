@@ -14,12 +14,13 @@ final class CalculatorView extends View {
  static final int[] CODES={0x02,0x12,0x22,0x32,0x42,0x01,0x11,0x21,0x31,0x41,0x00,0x10,0x20,0x30,0x40,0x64,0x63,0x62,0x61,0x60,0x05,0x15,0x25,0x35,0x45,0x55,0x04,0x14,0x24,0x34,0x44,0x54,0x03,0x13,0x23,0x33,0x43,0x53,0x06,0x16,0x46,0x56,0x07,0x17,0x47,0xFF,0x26,0x37,0x27,0x36};
  static final String[] MAIN={"7","8","9","DEL","AC","4","5","6","×","÷","1","2","3","+","−","0",".","×10ˣ","Ans","=","分数","平方根","x²","xʸ","log","ln","负号","度分秒","x⁻¹","sin","cos","tan","STO","ENG","(",")","S⇔D","M+","OPTN","CALC","积分","x","SHIFT","ALPHA","菜单","ON","左","右","上","下"};
  static final RectF[] RECTS=SkinGeometry.KEYS;
+ private final Paint skinPaint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
  private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
  private Bitmap skin;
  private int renderedTheme=-1,renderedResolution=0,active=-1;
  private boolean skinFailed=false;
  private float scaleX=1,scaleY=1,ox,oy;
- CalculatorView(Context context){super(context);activity=(MainActivity)context;setLayerType(View.LAYER_TYPE_SOFTWARE,null);setFocusable(true);setContentDescription("fx-991CN X，SHIFT 后按菜单进入设置，主题、按键、关于");}
+ CalculatorView(Context context){super(context);activity=(MainActivity)context;setLayerType(View.LAYER_TYPE_SOFTWARE,null);setFocusable(true);setContentDescription("fx-991CN X，SHIFT 后按菜单进入设置，原机设置末页包含主题、按键");}
  void appearanceChanged(){renderedTheme=-1;invalidate();}
  @Override public WindowInsets onApplyWindowInsets(WindowInsets insets){setPadding(0,0,0,0);return insets;}
  private void skin(int theme,int resolution){
@@ -38,22 +39,15 @@ final class CalculatorView extends View {
   scaleX=getWidth()/329f;scaleY=getHeight()/724f;ox=-8*scaleX;oy=-8*scaleY;
   canvas.save();canvas.translate(ox,oy);canvas.scale(scaleX,scaleY);
   skin(activity.ui.theme(),Math.max(1,Math.min(4,(int)Math.ceil(Math.max(scaleX,scaleY)))));
-  if(skin!=null&&!skinFailed)canvas.drawBitmap(skin,null,new RectF(0,0,SkinGeometry.WIDTH,SkinGeometry.HEIGHT),paint);
+  if(skin!=null&&!skinFailed)canvas.drawBitmap(skin,null,new RectF(0,0,SkinGeometry.WIDTH,SkinGeometry.HEIGHT),skinPaint);
   else{text(canvas,"面板载入失败",172,360,14,0xff555555,false);canvas.restore();return;}
   drawLCD(canvas);
-  if(active>=0){
-   paint.setColor(0x35000000);paint.setStyle(Paint.Style.FILL);
-   if(active>=46){float[] coordinates=SkinGeometry.DPAD[active-46];Path path=new Path();path.moveTo(coordinates[0],coordinates[1]);for(int i=2;i<coordinates.length;i+=2)path.lineTo(coordinates[i],coordinates[i+1]);path.close();canvas.drawPath(path,paint);}
-   else if(active>=42)canvas.drawOval(RECTS[active],paint);
-   else canvas.drawRoundRect(RECTS[active],4,4,paint);
-  }
   canvas.restore();
  }
  private void drawLCD(Canvas canvas){
   RectF area=SkinGeometry.LCD;
-  byte[] menu=activity.settings.frame();
-  if(!ready&&menu==null){text(canvas,"导入 ROM",area.centerX(),166,12,0xff304336,true);text(canvas,"点击选择 fx-991CN X 固件",area.centerX(),185,7.8f,0xff526354,false);return;}
-  byte[] frame=menu!=null?menu:lcd;int mode=frame[2048]&7,contrast=frame[2049]&63;
+  if(!ready){text(canvas,"导入 ROM",area.centerX(),166,12,0xff304336,true);text(canvas,"点击选择 fx-991CN X 固件",area.centerX(),185,7.8f,0xff526354,false);return;}
+  byte[] frame=activity.settings.compose(lcd);int mode=frame[2048]&7,contrast=frame[2049]&63;
   if(mode!=4&&mode!=5&&mode!=6)return;
   final String[] names={"S","A","M","STO","Math","D","R","G","FIX","SCI","E","i","∠","▼","◀","▼","▲","▶","Ⅱ","☀"};
   final int[] offsets={0,1,2,3,5,6,7,8,9,10,11,12,13,15,16,17,18,19,21,22};

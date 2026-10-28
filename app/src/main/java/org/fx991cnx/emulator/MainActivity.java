@@ -13,7 +13,6 @@ import android.media.SoundPool;
 import java.io.*;
 import java.nio.file.Files;
 import java.security.MessageDigest;
-import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.zip.CRC32;
 
@@ -31,8 +30,7 @@ public class MainActivity extends Activity {
  private final java.util.ArrayDeque<int[]> keys=new java.util.ArrayDeque<>();
  private long frames=0;
  LcdSettings settings;
- private boolean shiftPending=false;
- private final boolean[] consumedUps=new boolean[256];
+ private boolean heldConsumed=false;
  @Override public void onCreate(Bundle b){super.onCreate(b);ui=new UiPreferences(this);settings=new LcdSettings(this);initFeedback();getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);getWindow().getAttributes().layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;panel=new CalculatorView(this);setContentView(panel);fullscreen();worker.execute(()->{installBundledRom();if(rom().isFile())open();});worker.scheduleWithFixedDelay(this::tick,0,16,TimeUnit.MILLISECONDS);}
  private void installBundledRom(){
   if(rom().isFile())return;
@@ -48,23 +46,15 @@ public class MainActivity extends Activity {
   long now=SystemClock.uptimeMillis();
   synchronized(keys){if(!keys.isEmpty()){
    int[] event=keys.peek();
-   if(event[1]==1 && held<0){keys.remove();held=event[0];heldAt=now;NativeCore.key(held,true);}
-   else if(event[1]==0 && now-heldAt>=64){keys.remove();NativeCore.key(event[0],false);held=-1;}
+   if(event[1]==1 && held<0){keys.remove();held=event[0];heldAt=now;heldConsumed=settings.keyDown(held,NativeCore.frame(0));if(!heldConsumed)NativeCore.key(held,true);}
+   else if(event[1]==0 && now-heldAt>=64){keys.remove();if(!heldConsumed)NativeCore.key(event[0],false);held=-1;heldConsumed=false;}
   }}
   byte[] lcd=NativeCore.frame(32000);panel.lcd=lcd;panel.postInvalidate();
   if(++frames%300==0){save();String e=NativeCore.error();if(!e.isEmpty())fail(e);}
  }catch(Exception e){fail("运行失败："+e.getMessage());}}
- void key(int code,boolean down){
-  if(!down&&consumedUps[code]){consumedUps[code]=false;return;}
-  if(down){
-   if(settings.active()){consumedUps[code]=true;settings.press(code);panel.invalidate();return;}
-   if(code==0x47&&shiftPending){shiftPending=false;settings.open();panel.invalidate();}
-   else shiftPending=code==0x07&&!shiftPending;
-  }
-  if(!ready)return;synchronized(keys){keys.add(new int[]{code,down?1:0});}
- }
- private void release(){synchronized(keys){keys.clear();if(held>=0)NativeCore.key(held,false);held=-1;}}
- private void open(){try{release();ready=false;digest=hex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(rom().toPath())));String e=NativeCore.open(rom().getPath());if(!e.isEmpty()){fail(e);return;}File state=stateFile();if(state.isFile()){
+ void key(int code,boolean down){if(!ready)return;synchronized(keys){keys.add(new int[]{code,down?1:0});}}
+ private void release(){synchronized(keys){keys.clear();if(held>=0&&!heldConsumed)NativeCore.key(held,false);held=-1;heldConsumed=false;}}
+ private void open(){try{release();settings.close();ready=false;digest=hex(MessageDigest.getInstance("SHA-256").digest(Files.readAllBytes(rom().toPath())));String e=NativeCore.open(rom().getPath());if(!e.isEmpty()){fail(e);return;}File state=stateFile();if(state.isFile()){
   try(DataInputStream in=new DataInputStream(new ByteArrayInputStream(new AtomicFile(state).readFully()))){
    if(in.readInt()!=0x46585331)throw new IOException();int n=in.readInt();if(n<1||n>65536)throw new IOException();long crc=in.readLong();byte[] data=new byte[n];in.readFully(data);CRC32 sum=new CRC32();sum.update(data);if(sum.getValue()!=crc||!NativeCore.restore(data))throw new IOException();
   }catch(Exception bad){runOnUiThread(()->Toast.makeText(this,"状态文件不可用，已冷启动；ROM 已保留",Toast.LENGTH_LONG).show());}
@@ -98,12 +88,8 @@ public class MainActivity extends Activity {
   AudioManager audio=(AudioManager)getSystemService(AUDIO_SERVICE);
   if(ui.sound()&&ui.volume()>0&&clickLoaded&&clickPool!=null&&audio!=null&&audio.getRingerMode()==AudioManager.RINGER_MODE_NORMAL){float volume=ui.volume()/100f;clickPool.play(clickSample,volume,volume,1,0,1f);}
  }
- void closeSettingsToCalculator(){shiftPending=false;if(ready)synchronized(keys){keys.add(new int[]{0x42,1});keys.add(new int[]{0x42,0});}}
- void appearanceChanged(){panel.appearanceChanged();}
- void resetCalculator(){worker.execute(()->{release();save();ready=false;panel.ready=false;if(!digest.isEmpty())new AtomicFile(stateFile()).delete();if(rom().isFile())open();});}
- void showSettings(){settings.open();panel.invalidate();}
- void tools(){showSettings();}
- void license(){try(InputStream in=getAssets().open("LICENSE")){new AlertDialog.Builder(this).setTitle("GNU GPL v3").setMessage(new String(readAll(in),java.nio.charset.StandardCharsets.UTF_8)).setPositiveButton("关闭",null).show();}catch(IOException ignored){}}
+ void appearanceChanged(){runOnUiThread(()->panel.appearanceChanged());}
+ void tools(){importRom();}
  private void fullscreen(){
   getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY|View.SYSTEM_UI_FLAG_FULLSCREEN|View.SYSTEM_UI_FLAG_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN|View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION|View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
   if(Build.VERSION.SDK_INT>=30){getWindow().setDecorFitsSystemWindows(false);WindowInsetsController c=getWindow().getInsetsController();if(c!=null){c.hide(WindowInsets.Type.systemBars());c.setSystemBarsBehavior(WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE);}}
@@ -114,5 +100,5 @@ public class MainActivity extends Activity {
  @Override protected void onResume(){super.onResume();running=true;fullscreen();}
  @Override protected void onPause(){running=false;panel.cancelTouch();worker.execute(()->{release();save();});super.onPause();}
  @Override protected void onDestroy(){if(clickPool!=null){clickPool.release();clickPool=null;}running=false;worker.execute(()->{release();save();});worker.shutdown();super.onDestroy();}
- @Override public void onBackPressed(){if(settings.active()){settings.back();panel.invalidate();}else finish();}
+ @Override public void onBackPressed(){if(settings.active())worker.execute(()->{settings.back();panel.postInvalidate();});else finish();}
 }

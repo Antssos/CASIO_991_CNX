@@ -41,3 +41,7 @@
 ## 0.4 LCD 扩展设置
 
 LCD 扩展设置字库由 OFL Noto Sans CJK SC 与 DejaVu Sans Mono 生成少量单色字形，沿用上述字体版权与许可证，不包含任何 Casio ROM 字库。原机计算显示仍直接读取 MCU 显存。扩展菜单属于本项目 GPL-3.0 界面代码，不修改专有 ROM。
+
+## 0.5 点阵菜单和图标
+
+扩展菜单字形改用 TakWolf 的 Fusion Pixel 12px（2026.10.25，SIL OFL 1.1），来源 https://github.com/TakWolf/fusion-pixel-font 。仅嵌入必要字形，完整 OFL 及 Ark Pixel、Cubic 11、Galmuri 上游归属一并保留在 licenses/Fusion-Pixel 和 APK assets/licenses/Fusion-Pixel。全宽编号采用 DejaVu Sans Mono Bold 的栅格化子集，沿用 DejaVu 许可证。不包含 ROM 字库；页面识别只记录不可逆 SHA-256，不打包原机菜单图像。启动图标依据用户提供的图案参考制作透明背景版本。

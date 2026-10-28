@@ -8,8 +8,8 @@ android {
   applicationId 'org.fx991cnx.emulator'
   minSdk 29
   targetSdk 35
-  versionCode 4
-  versionName '0.4.0-preview'
+  versionCode 5
+  versionName '0.5.0-preview'
   testInstrumentationRunner 'android.test.InstrumentationTestRunner'
   externalNativeBuild { cmake { cppFlags '-std=c++17' } }
  }

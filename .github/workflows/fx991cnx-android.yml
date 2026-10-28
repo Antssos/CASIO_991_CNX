@@ -35,9 +35,13 @@ jobs:
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/release/fx991cnx-arm64-release.apk
           "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/release/fx991cnx-arm64-release.apk
           "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions app/build/outputs/apk/release/fx991cnx-arm64-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging app/build/outputs/apk/release/fx991cnx-arm64-release.apk
           python - <<'PY_PACKAGE'
           from zipfile import ZipFile
           from pathlib import Path
+          assert Path('app/src/main/res/mipmap-nodpi/ic_launcher_foreground.png').read_bytes()[25] == 6
+          assert 'android:label="卡西欧计算器"' in Path('app/src/main/AndroidManifest.xml').read_text()
+          assert '@android:color/transparent' in Path('app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml').read_text()
           for path in Path('app/build/outputs/apk/release').glob('*.apk'):
               with ZipFile(path) as archive:
                   names=archive.namelist()

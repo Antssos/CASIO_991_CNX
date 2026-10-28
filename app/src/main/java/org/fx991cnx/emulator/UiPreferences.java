@@ -14,6 +14,8 @@ final class UiPreferences {
  int strength(){return Math.max(0,Math.min(2,preferences.getInt("vibration_strength",0)));}
  boolean sound(){return preferences.getBoolean("sound",false);}
  int volume(){return Math.max(0,Math.min(100,preferences.getInt("sound_volume",35)));}
+ void vibrationLevel(int level){preferences.edit().putBoolean("vibration",level>0).putInt("vibration_strength",Math.max(0,level-1)).apply();}
+ void soundLevel(int level){preferences.edit().putBoolean("sound",level>0).putInt("sound_volume",new int[]{0,20,50,85}[level]).apply();}
  void theme(int value){preferences.edit().putInt("theme",value).apply();}
  void vibration(boolean value){preferences.edit().putBoolean("vibration",value).apply();}
  void strength(int value){preferences.edit().putInt("vibration_strength",value).apply();}
