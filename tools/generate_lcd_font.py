@@ -4,10 +4,9 @@ Usage: python tools/generate_lcd_font.py /path/to/fusion-pixel-12px-monospaced-z
 Upstream version 2026.10.25. No ROM fonts are read or embedded.
 """
 from pathlib import Path
-import hashlib,json,sys
+import hashlib,sys
 from PIL import Image,ImageDraw,ImageFont
 root=Path(__file__).resolve().parents[1]
-source=(root/'app/src/main/java/org/fx991cnx/emulator/LcdSettings.java').read_text()
 needed=set('1234:主题按键雾霾蓝珍珠白樱花粉经典黑震动强度音量关轻中重')
 path=Path(sys.argv[1]);lines=path.read_text().splitlines();glyphs={};i=0
 while i<len(lines):
@@ -38,7 +37,6 @@ for char in '1234':
     glyphs[char]=[sum(1<<x for x in range(12) if im.getpixel((x,y))>=100) for y in range(12)]
 glyphs[':']=[sum(1<<x for x in range(4,7)) if y in (2,3,4,8,9,10) else 0 for y in range(12)]
 assert needed<=glyphs.keys(),needed-glyphs.keys()
-(root/'app/src/main/assets/lcd-font.json').write_text(json.dumps(glyphs,ensure_ascii=False,separators=(',',':'))+'\n')
 chars=''.join(sorted(glyphs))
 java='package org.fx991cnx.emulator;\n\n// Generated 12px OFL pixel glyph subset; see licenses/Fusion-Pixel.\nfinal class LcdGlyphs {\n static final String CHARS="'+chars+'";\n static final int[][] ROWS={\n'
 for char in chars:java+='  {'+','.join(map(str,glyphs[char]))+'},\n'

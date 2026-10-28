@@ -1,4 +1,4 @@
-name: fx991cnx Android APK
+name: Build APK
 on:
   push:
     branches: [main]
@@ -47,7 +47,6 @@ jobs:
               with ZipFile(path) as archive:
                   names=archive.namelist()
                   assert all('assets/skins/'+theme+'.svg' in names for theme in ['blue','ivory','pink','black'])
-                  assert 'assets/lcd-font.json' in names
                   assert all(b'<text' not in archive.read('assets/skins/'+theme+'.svg') for theme in ['blue','ivory','pink','black'])
                   assert not any(name.endswith(('.rom','.bin')) and name.startswith('assets/') for name in names)
                   print(path.name, 'four built-in faceplates, no bundled ROM')
@@ -56,10 +55,8 @@ jobs:
         run: |
           mkdir -p delivery
           cp app/build/outputs/apk/release/fx991cnx-arm64-release.apk delivery/
-          cp README.md BUILD.md TEST_REPORT.md LICENSE THIRD_PARTY_NOTICES.md delivery/
-          cp -r docs/theme-previews delivery/
+          cp README.md BUILD.md LICENSE THIRD_PARTY_NOTICES.md delivery/
           git archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD
-          printf '用户要求本轮不执行 Android 测试。仅编译 release 并检查签名、对齐、权限与内置素材。\n四套 PNG 为静态素材预览，不是设备运行截图。\n' > delivery/VALIDATION.txt
           cd delivery
           sha256sum fx991cnx-arm64-release.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4

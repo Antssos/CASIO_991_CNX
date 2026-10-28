@@ -9,3 +9,5 @@ captures/
 delivery/
 screenshots/
 native-test.txt
+
+__pycache__/

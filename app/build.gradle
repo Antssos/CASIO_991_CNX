@@ -10,7 +10,6 @@ android {
   targetSdk 35
   versionCode 6
   versionName '0.6.0-preview'
-  testInstrumentationRunner 'android.test.InstrumentationTestRunner'
   externalNativeBuild { cmake { cppFlags '-std=c++17' } }
  }
  signingConfigs {
@@ -32,7 +31,6 @@ android {
 
 dependencies {
  implementation "com.caverock:androidsvg-aar:1.4"
- androidTestCompileOnly files("${android.sdkDirectory}/platforms/android-35/optional/android.test.runner.jar", "${android.sdkDirectory}/platforms/android-35/optional/android.test.base.jar", "${android.sdkDirectory}/platforms/android-35/optional/android.test.mock.jar")
 }
 
 // Optional licensed-ROM build. Public builds leave this generated directory empty.

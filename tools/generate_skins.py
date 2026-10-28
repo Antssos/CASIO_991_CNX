@@ -5,7 +5,7 @@ Run from any directory. Geometry and native touch regions share this source.
 """
 from pathlib import Path
 from html import escape
-import json, random
+import random
 from functools import lru_cache
 from fontTools.ttLib import TTFont
 from fontTools.pens.svgPathPen import SVGPathPen
@@ -208,5 +208,4 @@ final class SkinGeometry {
  private SkinGeometry(){}
 }
 ''')
-(DEST/'geometry.json').write_text(json.dumps({'width':WIDTH,'height':HEIGHT,'keys':KEYS,'dpad':DPAD},indent=2))
 print('Generated four native SVG faceplates and shared 50-key geometry.')
