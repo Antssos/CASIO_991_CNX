@@ -20,7 +20,7 @@
 - 系统文件选择器打开/返回、导入结果处理、长度/向量检查及候选机型确认通过。测试自动调用选择器结果回调传入本地合成文件 URI；未自动点击选择器中的真实用户 ROM 文件。
 - 原创测试 ROM 由真实 MCU 绘制 `TEST ROM`，启动、50 键视觉中心热区及触摸序列通过。按住数字 1 后 MCU 的扫描结果确实写入 LCD VRAM 为 `0xFE`，松手为 `0xFF`；验证的是硬件输入链路，不是 Casio 数学语义。
 - 后台后返回并再次触摸扫描通过；结束 Activity 并重新打开可恢复运行。另用 `am force-stop` / `am start -W` 启动成功并保存截图。原生测试同时验证全状态跨冷实例还原。
-- 竖屏与 1600×2560 / 240 dpi 平板截图已核对，整台面板可见，无系统栏遮挡。首轮横屏截图捕获了旋转过渡帧，已补充布局稳定断言与独立 ADB 截图，最终横屏证据以发布包中的 `09-landscape-stable.png` 为准。
+- 竖屏与 1600×2560 / 240 dpi 平板截图已核对，整台面板可见，无系统栏遮挡。首轮横屏截图捕获了旋转过渡帧；补充布局稳定断言与独立 ADB 截图后，[最终运行 40664197615](https://github.com/Antssos/cloudcodex/actions/runs/40664197615) 再次全部成功，已目视核对 [稳定横屏截图](docs/evidence/landscape-stable.png)。
 - 卸载测试应用后，**实际安装 x86_64 release APK** 成功，启动返回 `Status: ok`，显示明确的无 ROM 导入引导。
 - arm64 release 已真实构建，未在 arm64 实机或 arm64 Android Emulator 执行；不能把 x86_64 测试说成 arm64 实机验收。Android 10 / API 29 也没有独立运行测试。
 - `apksigner verify` 通过，APK Signature Scheme v2 有效；`zipalign -c -P 16 4` 通过。`aapt dump permissions` 没有任何权限声明。检查 APK assets 只有 LICENSE，没有 ROM。
@@ -61,3 +61,16 @@
 4. 输入未完成表达式、变量/历史后依次回桌面、退出、强制结束进程、重开；检查状态。
 5. 开飞行模式并关闭 Wi-Fi/移动网络，全程重复以上步骤。
 6. 保存实际截图、ROM SHA-256（不发布 ROM）和设备/API 信息后才可标记验收完成。
+
+
+## 最终发布
+
+[Release 0.1.0-preview](https://github.com/Antssos/cloudcodex/releases/tag/fx991cnx-v0.1.0-preview) 已发布（私有仓库，需要有权限的 GitHub 账户）。[Artifact](https://github.com/Antssos/cloudcodex/actions/runs/40664197615/artifacts/12805426799) 与 Release 中的 APK 完全相同。
+
+`fx991cnx-arm64-release.apk`：1087022 字节。SHA-256：
+
+```text
+9c85565a789cae37fa950d66f11a056a26b7362f4492fb665753d349fe12b6de
+```
+
+发布工作流 [40664788124](https://github.com/Antssos/cloudcodex/actions/runs/40664788124) 成功，GitHub Release 记录的资产摘要与取回的 Artifact APK 一致。再次验证签名、16 KiB 对齐及无权限声明均通过。截图与源码对应的生产应用代码仍与首次成功验证版本相同；这里只补充测试和交付证据，**原机固件数学功能仍未验收**。
