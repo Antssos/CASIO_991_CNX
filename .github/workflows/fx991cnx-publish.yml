@@ -50,7 +50,7 @@ jobs:
           gh api "repos/$GH_REPO/git/blobs/$APK_BLOB" --jq .content | base64 --decode > delivery/fx991cnx-arm64-release.apk
           printf '%s  fx991cnx-arm64-release.apk\n' "$APK_SHA256" > delivery/SHA256SUMS.txt
           (cd delivery && sha256sum -c SHA256SUMS.txt)
-          cp README.md BUILD.md LICENSE THIRD_PARTY_NOTICES.md delivery/
+          cp README.md app/BUILD.md LICENSE licenses/THIRD_PARTY_NOTICES.md delivery/
           git archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD
           sdkmanager 'build-tools;35.0.0'
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify delivery/fx991cnx-arm64-release.apk

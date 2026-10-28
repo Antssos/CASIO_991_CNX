@@ -55,7 +55,7 @@ jobs:
         run: |
           mkdir -p delivery
           cp app/build/outputs/apk/release/fx991cnx-arm64-release.apk delivery/
-          cp README.md BUILD.md LICENSE THIRD_PARTY_NOTICES.md delivery/
+          cp README.md app/BUILD.md LICENSE licenses/THIRD_PARTY_NOTICES.md delivery/
           git archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD
           cd delivery
           sha256sum fx991cnx-arm64-release.apk > SHA256SUMS.txt

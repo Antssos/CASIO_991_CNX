@@ -13,4 +13,4 @@
 
 设置自动保存，`DEL` 返回上一级。
 
-[构建说明](BUILD.md) · [第三方归属](THIRD_PARTY_NOTICES.md) · [GPL-3.0](LICENSE)
+[构建说明](app/BUILD.md) · [第三方归属](licenses/THIRD_PARTY_NOTICES.md) · [GPL-3.0](LICENSE)
