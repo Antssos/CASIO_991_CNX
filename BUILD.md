@@ -16,7 +16,7 @@
 sdkmanager --licenses
 sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'platform-tools' 'ndk;27.2.12479018' 'cmake;3.22.1'
 export ANDROID_HOME=/your/android-sdk
-# 在 Android Studio 中打开 fx991cnx-android 目录亦可。
+# 在 Android Studio 中打开本仓库根目录亦可。
 keytool -genkeypair -keystore /your/preview.keystore -storepass android \
   -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' \
   -keyalg RSA -keysize 2048 -validity 10000
@@ -55,7 +55,7 @@ adb pull /sdcard/Pictures/fx991-screens/ screenshots/
 
 ## GitHub Actions
 
-根目录 `.github/workflows/fx991cnx-android.yml` 自动安装 SDK/NDK、构建两个 ABI，仅检查打包结果，上传 APK、SHA-256、匹配源码和验证记录。可在分支提交触发或手动运行。临时预览签名不能保证跨 CI 构建直接升级。
+本仓库 `.github/workflows/fx991cnx-android.yml` 自动安装 SDK/NDK、构建两个 ABI，仅检查打包结果，上传 APK、SHA-256、匹配源码和验证记录。可在分支提交触发或手动运行。临时预览签名不能保证跨 CI 构建直接升级。
 
 
 ## 原机固件兼容性测试（0.2）
@@ -114,3 +114,9 @@ tests/run-setup-integration.sh /private/fx991cnx.rom
 ## 0.6 用户审定图标
 
 使用用户选中的图 1 方形原稿，保留 C／%／= 和莫兰迪鼠尾草绿、米白、浅暖灰配色。直接替换 PNG，不预先剪圆角，不再使用旧蓝橙图标。`drawable/ic_launcher_foreground.xml` 四边各设 3% inset；在 108dp 自适应资源、常见 72dp 可见窗口中，原稿约 48% 的主体占比会显示为约 68%，使留白比合成预览适度缩小。`colors.xml` 提供配套的浅暖灰底色，系统决定最终裁切形状。原稿已提交，构建不需图片生成服务。此次只改资源与版本，不重跑计算器功能测试或 Android 运行测试。
+
+## 独立仓库构建与发布
+
+克隆 https://github.com/Antssos/CASIO_991_CNX 后，在仓库根目录执行上述 Gradle 命令。工作流监听 main 的 push 和 pull request；发布任务只发布 main 上构建成功的产物。原开发分支名称以同名分支保留，后续可通过 PR 合入 main。
+
+迁移 0.6 时，发布工作流使用可选 original_apk_blob 与 original_apk_sha256 输入，从本仓库 Git 对象取回原已签名 APK 并校验 SHA-256；新仓库 CI 则独立构建和打包，二者在验证记录中区分。该迁移机制不处理密钥，也不重新签署原 APK；之后普通发布不传这两个输入。项目全部 app 源码、资源、Gradle/NDK 配置均保持与原 0.6 一致，仅目录位置、文档及 CI 地址适配新仓库。

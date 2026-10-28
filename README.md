@@ -4,7 +4,7 @@ Android 10+ 原机模拟器，C++ nX-U8 核心 + NDK/JNI + 原生 Android 界面
 
 ## 下载与安装
 
-[下载 Release](https://github.com/Antssos/cloudcodex/releases/tag/fx991cnx-v0.6.0-preview)，安装 `fx991cnx-arm64-release.apk`。仓库为私有，下载需登录有权限的 GitHub 账户；安装后的应用不需要账户。
+[下载 Release](https://github.com/Antssos/CASIO_991_CNX/releases/tag/fx991cnx-v0.6.0-preview)，安装 `fx991cnx-arm64-release.apk`。仓库公开，下载和使用应用均无需账户。
 
 首次点液晶屏，选择您有权使用的 fx-991CN X 完整 256 KiB ROM。文件仅复制到应用内部，之后离线使用，无需再次选择。支持已测试样本的精确指纹识别；未知版本需确认机型，不支持将 ES、EX 或 CW 固件转换为 CN X。
 
@@ -48,10 +48,14 @@ Android 10+ 原机模拟器，C++ nX-U8 核心 + NDK/JNI + 原生 Android 界面
 
 ## 源码和许可
 
-独立目录 `fx991cnx-android/`，分支 `feat/fx991cnx-android`。GPL-3.0 完整源码、构建配置与许可证随 Release/Artifact 的 `fx991cnx-source.zip` 提供。构建见 [BUILD.md](BUILD.md)，归属与字体许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。GPL 不自动覆盖 Casio ROM，发布包不提供 ROM。
+项目现位于本仓库根目录，默认分支 `main`，同时保留迁移后的 `feat/fx991cnx-android` 分支。GPL-3.0 完整源码、构建配置与许可证随 Release/Artifact 的 `fx991cnx-source.zip` 提供。构建见 [BUILD.md](BUILD.md)，归属与字体许可见 [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)。GPL 不自动覆盖 Casio ROM，发布包不提供 ROM。
 
 当前为开发签名预览版，不同构建可能无法覆盖安装，届时需卸载重装。卸载或清除应用数据会删除导入 ROM、状态与偏好设置，请保留自己的原始 ROM 文件。
 
 ## 内置 ROM 的状态
 
 本次公开交付仍未内置 ROM：用户表示会提供授权依据，当前尚未收到可核验文件或链接。已实现授权固件的首次启动自动安装路径；有允许随 APK 再分发的授权后，可以按 BUILD.md 的参数构建内置版。当前下载版仍需首次导入，不能称为开箱即用。
+
+## 仓库迁移
+
+本项目由原开发仓库的计算器专用分支迁移至 [Antssos/CASIO_991_CNX](https://github.com/Antssos/CASIO_991_CNX)，只保留计算器项目及两条相关工作流的历史，路径整理到根目录，因此提交 SHA 与原仓库不同。0.6 Release APK 原样迁移，保留原签名及 SHA-256 `85f24301d98bdb80c27de3350522ead4d2549663d842c5d633baff6fac6f2dd8`；已安装原 0.6 的用户无需因迁移卸载重装。新仓库 CI 独立验证根目录构建，并在 Actions 中保留构建 Artifact。历史测试链接保留为原记录，部分可能需要原仓库访问权限。

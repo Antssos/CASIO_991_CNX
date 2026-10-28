@@ -1,8 +1,9 @@
 name: fx991cnx Android APK
 on:
   push:
-    branches: [feat/fx991cnx-android]
-    paths: ['fx991cnx-android/**', '.github/workflows/fx991cnx-android.yml']
+    branches: [main]
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 permissions:
   contents: read
@@ -10,9 +11,6 @@ jobs:
   build-package:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    defaults:
-      run:
-        working-directory: fx991cnx-android
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
@@ -60,12 +58,12 @@ jobs:
           cp app/build/outputs/apk/release/fx991cnx-arm64-release.apk delivery/
           cp README.md BUILD.md TEST_REPORT.md LICENSE THIRD_PARTY_NOTICES.md delivery/
           cp -r docs/theme-previews delivery/
-          git -C .. archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD fx991cnx-android .github/workflows/fx991cnx-android.yml .github/workflows/fx991cnx-publish.yml
+          git archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD
           printf '用户要求本轮不执行 Android 测试。仅编译 release 并检查签名、对齐、权限与内置素材。\n四套 PNG 为静态素材预览，不是设备运行截图。\n' > delivery/VALIDATION.txt
           cd delivery
           sha256sum fx991cnx-arm64-release.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
           name: fx991cnx-arm64-release
-          path: fx991cnx-android/delivery/
+          path: delivery/
           retention-days: 90

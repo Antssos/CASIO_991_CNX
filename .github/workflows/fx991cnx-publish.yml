@@ -1,10 +1,16 @@
 name: Publish fx991cnx appearance preview
 on:
   push:
-    branches: [feat/fx991cnx-android]
+    branches: [main]
     paths: ['.github/workflows/fx991cnx-publish.yml']
   workflow_dispatch:
     inputs:
+      original_apk_blob:
+        description: Optional Git blob SHA for preserving an existing release APK during migration
+        required: false
+      original_apk_sha256:
+        description: Required SHA-256 when original_apk_blob is provided
+        required: false
       run_id:
         description: Optional successful build-only run ID
         required: false
@@ -39,7 +45,7 @@ jobs:
           [[ "$build_run" =~ ^[0-9]+$ ]]
           gh run watch "$build_run" --interval 30 --exit-status
           test "$(gh api "repos/$GH_REPO/actions/runs/$build_run" --jq .conclusion)" = success
-          test "$(gh api "repos/$GH_REPO/actions/runs/$build_run" --jq .head_branch)" = feat/fx991cnx-android
+          test "$(gh api "repos/$GH_REPO/actions/runs/$build_run" --jq .head_branch)" = main
           commit=$(gh api "repos/$GH_REPO/actions/runs/$build_run" --jq .head_sha)
           echo "run=$build_run" >> "$GITHUB_OUTPUT"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
@@ -50,6 +56,20 @@ jobs:
           run-id: ${{ steps.verified.outputs.run }}
           name: fx991cnx-arm64-release
           path: verified-artifact
+      - name: Preserve the original signed APK during repository migration
+        if: github.event.inputs.original_apk_blob != ''
+        env:
+          ORIGINAL_APK_BLOB: ${{ github.event.inputs.original_apk_blob }}
+          ORIGINAL_APK_SHA256: ${{ github.event.inputs.original_apk_sha256 }}
+        run: |
+          [[ "$ORIGINAL_APK_BLOB" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$ORIGINAL_APK_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          gh api "repos/$GH_REPO/git/blobs/$ORIGINAL_APK_BLOB" --jq .content | base64 --decode > verified-artifact/fx991cnx-arm64-release.apk
+          cd verified-artifact
+          printf '%s  fx991cnx-arm64-release.apk\n' "$ORIGINAL_APK_SHA256" > SHA256SUMS.txt
+          sha256sum -c SHA256SUMS.txt
+          printf '\n仓库迁移保留原 0.6 已签名 APK，SHA-256: %s。CI 新构建仅验证新目录可构建；Release APK 沿用原签名。\n' "$ORIGINAL_APK_SHA256" >> VALIDATION.txt
+          printf '\n\n## 仓库迁移\n\nRelease 保留原 0.6 APK，SHA-256: %s。新仓库构建验证成功；本次未重新签署发布 APK，保留其原签名。\n' "$ORIGINAL_APK_SHA256" >> TEST_REPORT.md
       - name: Verify delivery and package static theme previews
         env:
           BUILD_RUN: ${{ steps.verified.outputs.run }}
@@ -83,8 +103,11 @@ jobs:
 
           构建与 Artifact：https://github.com/$GH_REPO/actions/runs/$BUILD_RUN
 
-          仍采用真实 nX-U8 C++/JNI 核心，所有计算由导入的固件执行。**APK 不含 ROM，首次需导入自己有权使用的 fx-991CN X 256 KiB 固件。** 没有广告、网络、存储或录音权限；仅有按键震动所需 VIBRATE 权限。开发签名跨构建可能需要卸载重装，请保留自己的 ROM 文件。私有仓库需有权限的 GitHub 账户下载。
+          仍采用真实 nX-U8 C++/JNI 核心，所有计算由导入的固件执行。**APK 不含 ROM，首次需导入自己有权使用的 fx-991CN X 256 KiB 固件。** 没有广告、网络、存储或录音权限；仅有按键震动所需 VIBRATE 权限。开发签名跨构建可能需要卸载重装，请保留自己的 ROM 文件。本仓库公开，可直接下载。
 
           附件包含 APK、GPL-3.0 完整源码、中文说明、可复现构建步骤、验证记录、全部许可证、四主题预览及 SHA-256。
           EOF_NOTES
+          if test -n '${{ github.event.inputs.original_apk_blob }}'; then
+            printf '\n本次为仓库迁移，Release APK 与原仓库 0.6 文件完全相同，保留原签名和 SHA-256，无需因迁仓卸载重装。新仓库的 CI 已独立完成构建验证。\n' >> /tmp/fx-release-notes.md
+          fi
           gh release edit "$RELEASE_TAG" --draft=false --prerelease --target "$VERIFIED_COMMIT" --notes-file /tmp/fx-release-notes.md
