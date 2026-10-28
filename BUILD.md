@@ -47,7 +47,7 @@ sdkmanager 'emulator' 'system-images;android-30;google_apis;x86_64'
 adb shell settings put global airplane_mode_on 1
 adb shell svc wifi disable
 adb shell svc data disable
-./gradlew :app:connectedDebugAndroidTest
+./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
 adb pull /sdcard/Pictures/fx991-screens/ screenshots/
 ```
 
