@@ -20,7 +20,7 @@ namespace casioemu
 		};
 		static constexpr int N_BYTE = sizeof(addr) / sizeof(addr[0]);
 		MMURegion region [N_BYTE];
-		uint8_t data [N_BYTE];
+		uint8_t data [N_BYTE]{};
 
 	public:
 		using Peripheral::Peripheral;
