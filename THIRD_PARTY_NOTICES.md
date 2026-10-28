@@ -45,3 +45,7 @@ LCD 扩展设置字库由 OFL Noto Sans CJK SC 与 DejaVu Sans Mono 生成少量
 ## 0.5 点阵菜单和图标
 
 扩展菜单字形改用 TakWolf 的 Fusion Pixel 12px（2026.10.25，SIL OFL 1.1），来源 https://github.com/TakWolf/fusion-pixel-font 。仅嵌入必要字形，完整 OFL 及 Ark Pixel、Cubic 11、Galmuri 上游归属一并保留在 licenses/Fusion-Pixel 和 APK assets/licenses/Fusion-Pixel。全宽编号采用 DejaVu Sans Mono Bold 的栅格化子集，沿用 DejaVu 许可证。不包含 ROM 字库；页面识别只记录不可逆 SHA-256，不打包原机菜单图像。启动图标依据用户提供的图案参考制作透明背景版本。
+
+## 0.6 审定图标
+
+桌面图标使用本项目按用户要求生成、经用户审定的莫兰迪色图 1，取代 0.5 的蓝橙配色版本。Android 资源只调整前景 inset 和背景颜色，不把桌面截图或合成预览打包进应用。

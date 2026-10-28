@@ -110,3 +110,7 @@ tests/run-setup-integration.sh /private/fx991cnx.rom
 ```
 
 生成器需要 Pillow 以及系统 DejaVuSansMono-Bold.ttf。字体完整 OFL 及上游归属见 `licenses/Fusion-Pixel/`，APK 同步附带。这些字形不是从 ROM 提取的。回归脚本在 git 忽略的 build/private-setup-check 内生成临时显存转储，验证原机四页识别、数字键透传、末页追加、主题、四档反馈和 DEL/AC，不将转储或 ROM 打入 APK。图标为透明 PNG 前景加透明自适应背景；无需联网或运行图片生成工具即可复现构建。
+
+## 0.6 用户审定图标
+
+使用用户选中的图 1 方形原稿，保留 C／%／= 和莫兰迪鼠尾草绿、米白、浅暖灰配色。直接替换 PNG，不预先剪圆角，不再使用旧蓝橙图标。`drawable/ic_launcher_foreground.xml` 四边各设 3% inset；在 108dp 自适应资源、常见 72dp 可见窗口中，原稿约 48% 的主体占比会显示为约 68%，使留白比合成预览适度缩小。`colors.xml` 提供配套的浅暖灰底色，系统决定最终裁切形状。原稿已提交，构建不需图片生成服务。此次只改资源与版本，不重跑计算器功能测试或 Android 运行测试。
