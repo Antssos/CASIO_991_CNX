@@ -1,0 +1,11 @@
+.gradle/
+**/build/
+**/.cxx/
+local.properties
+*.keystore
+*.jks
+captures/
+
+delivery/
+screenshots/
+native-test.txt

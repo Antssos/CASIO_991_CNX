@@ -1,0 +1,156 @@
+#include "MMU.hpp"
+
+
+
+#include <cstdio>
+#include <cstring>
+#include "../Emulator.hpp"
+#include "Chipset.hpp"
+#include "../Logger.hpp"
+
+namespace casioemu
+{
+	MMU::MMU(Emulator &_emulator) : emulator(_emulator)
+	{
+		segment_dispatch = new MemoryByte *[0x100];
+		for (size_t ix = 0; ix != 0x100; ++ix)
+			segment_dispatch[ix] = nullptr;
+	}
+
+	MMU::~MMU()
+	{
+		for (size_t ix = 0; ix != 0x100; ++ix)
+			if (segment_dispatch[ix])
+				delete[] segment_dispatch[ix];
+
+		delete[] segment_dispatch;
+	}
+
+	void MMU::GenerateSegmentDispatch(size_t segment_index)
+	{
+		segment_dispatch[segment_index] = new MemoryByte[0x10000];
+		for (size_t ix = 0; ix != 0x10000; ++ix)
+		{
+			segment_dispatch[segment_index][ix].region = nullptr;
+			segment_dispatch[segment_index][ix].on_read = -1;
+			segment_dispatch[segment_index][ix].on_write = -1;
+		}
+	}
+
+	
+
+	void MMU::SetupInternals() {}
+
+	uint16_t MMU::ReadCode(size_t offset)
+	{
+		if (offset >= (1 << 20))
+			PANIC("offset doesn't fit 20 bits\n");
+		if (offset & 1)
+			PANIC("offset has LSB set\n");
+
+		size_t segment_index = offset >> 16;
+		size_t segment_offset = offset & 0xFFFF;
+
+		if (!segment_index)
+			return (((uint16_t)emulator.chipset.rom_data[segment_offset + 1]) << 8) | emulator.chipset.rom_data[segment_offset];
+
+		MemoryByte *segment = segment_dispatch[segment_index];
+		if (!segment)
+		{
+			emulator.HandleMemoryError();
+			return 0;
+		}
+
+		MMURegion *region = segment[segment_offset].region;
+		if (!region)
+		{
+			emulator.HandleMemoryError();
+			return 0;
+		}
+
+		return (((uint16_t)region->read(region, offset + 1)) << 8) | region->read(region, offset);
+	}
+
+	uint8_t MMU::ReadData(size_t offset)
+	{
+		if (offset >= (1 << 24))
+			PANIC("offset doesn't fit 24 bits\n");
+
+		size_t segment_index = offset >> 16;
+		size_t segment_offset = offset & 0xFFFF;
+
+		MemoryByte *segment = segment_dispatch[segment_index];
+		if (!segment)
+		{
+			//logger::Info("read from offset %04zX of unmapped segment %02zX\n", segment_offset, segment_index);
+			emulator.HandleMemoryError();
+			return 0;
+		}
+
+		MemoryByte &byte = segment[segment_offset];
+		MMURegion *region = byte.region;
+		
+		if (!region)
+		{
+			//logger::Info("read from unmapped offset %04zX of segment %02zX\n", segment_offset, segment_index);
+			emulator.HandleMemoryError();
+			return 0;
+		}
+		
+		return region->read(region, offset);
+	}
+
+	void MMU::WriteData(size_t offset, uint8_t data)
+	{
+		if (offset >= (1 << 24))
+			PANIC("offset doesn't fit 24 bits\n");
+
+		size_t segment_index = offset >> 16;
+		size_t segment_offset = offset & 0xFFFF;
+		
+		MemoryByte *segment = segment_dispatch[segment_index];
+		if (!segment)
+		{
+			//logger::Info("write to offset %04zX of unmapped segment %02zX (%02zX)\n", segment_offset, segment_index, data);
+			emulator.HandleMemoryError();
+			return;
+		}
+
+		MemoryByte &byte = segment[segment_offset];
+		MMURegion *region = byte.region;
+		
+		if (!region)
+		{
+			//logger::Info("write to unmapped offset %04zX of segment %02zX (%02zX)\n", segment_offset, segment_index, data);
+			emulator.HandleMemoryError();
+			return;
+		}
+
+		
+
+		region->write(region, offset, data);
+	}
+
+	void MMU::RegisterRegion(MMURegion *region)
+	{
+		for (size_t ix = region->base; ix != region->base + region->size; ++ix)
+		{
+			if(ix == 561152){
+				printf("s");
+			}
+			if (segment_dispatch[ix >> 16][ix & 0xFFFF].region)
+				PANIC("MMU region overlap at %06zX\n", ix);
+			segment_dispatch[ix >> 16][ix & 0xFFFF].region = region;
+		}
+	}
+
+	void MMU::UnregisterRegion(MMURegion *region)
+	{
+		for (size_t ix = region->base; ix != region->base + region->size; ++ix)
+		{
+			if (!segment_dispatch[ix >> 16][ix & 0xFFFF].region)
+				PANIC("MMU region double-hole at %06zX\n", ix);
+			segment_dispatch[ix >> 16][ix & 0xFFFF].region = nullptr;
+		}
+	}
+}

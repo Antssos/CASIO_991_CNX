@@ -1,0 +1,63 @@
+package org.fx991cnx.emulator;
+import android.test.ActivityInstrumentationTestCase2;
+import android.graphics.Bitmap;
+import android.os.SystemClock;
+import android.view.*;
+import android.content.Intent;
+import java.io.*;
+import java.util.*;
+
+/** Only original synthetic MCU firmware. Never asserts Casio math works. */
+public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity> {
+ public EmulatorTest(){super(MainActivity.class);}
+ private void shot(String name)throws Exception{
+  File dir=new File(getInstrumentation().getTargetContext().getExternalFilesDir(null),"screenshots");dir.mkdirs();
+  Bitmap b=getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(b);try(FileOutputStream out=new FileOutputStream(new File(dir,name+".png"))){b.compress(Bitmap.CompressFormat.PNG,100,out);}b.recycle();
+ }
+ private static void word(byte[] b,int a,int v){b[a]=(byte)v;b[a+1]=(byte)(v>>8);}
+ private static byte[] fixture(){
+  byte[] b=new byte[262144];Arrays.fill(b,(byte)0xff);word(b,0,0xE000);word(b,2,0x100);
+  ArrayList<Integer> words=new ArrayList<>();
+  // Store immediate byte by actual MOV/ST instructions.
+  java.util.function.BiConsumer<Integer,Integer> store=(a,v)->{words.add(v);words.add(0x9011);words.add(a);};
+  store.accept(0xF031,5);store.accept(0xF032,12);store.accept(0xF046,127);
+  // Font pattern TEST ROM; test glyphs are not a Casio calculator result.
+  int[][] glyphs={{31,4,4,4,4,4,4},{31,16,16,30,16,16,31},{15,16,16,14,1,1,30},{31,4,4,4,4,4,4},{0,0,0,0,0,0,0},{30,17,17,30,20,18,17},{14,17,17,17,17,17,14},{17,27,21,21,17,17,17}};
+  for(int y=0;y<7;y++){for(int col=0;col<6;col++){int value=0;for(int bit=0;bit<8;bit++){int x=col*8+bit;int g=x/6,offset=x%6;if(g<glyphs.length&&offset<5&&(glyphs[g][y]&(1<<(4-offset)))!=0)value|=128>>bit;}store.accept(0xF820+(y+15)*32+col,value);}}
+  int loop=0x100+words.size()*2;words.add(0x9010);words.add(0xF040);words.add(0x9011);words.add(0xF820+40*32);words.add(0xCEFB);
+  for(int i=0;i<words.size();i++)word(b,0x100+i*2,words.get(i));return b;
+ }
+ private CalculatorView view(MainActivity a){return (CalculatorView)((android.view.ViewGroup)a.findViewById(android.R.id.content)).getChildAt(0);}
+ private void touch(MainActivity a,CalculatorView v,int index,boolean down){
+  float s=Math.min(v.getWidth()/344f,v.getHeight()/720f),ox=(v.getWidth()-344*s)/2,oy=(v.getHeight()-720*s)/2;
+  android.graphics.RectF r=CalculatorView.RECTS[index];float x=ox+r.centerX()*s,y=oy+r.centerY()*s;
+  getInstrumentation().runOnMainSync(()->{MotionEvent e=MotionEvent.obtain(SystemClock.uptimeMillis(),SystemClock.uptimeMillis(),down?MotionEvent.ACTION_DOWN:MotionEvent.ACTION_UP,x,y,0);v.dispatchTouchEvent(e);e.recycle();});
+ }
+ public void testOfflineNativeAndTouch()throws Exception{
+  MainActivity a=getActivity();SystemClock.sleep(500);shot("01-no-rom-portrait");
+  // Fixture is written only by the separately installed test APK.
+  byte[] firmware=fixture();File file=new File(a.getFilesDir(),"test-only.rom");try(FileOutputStream out=new FileOutputStream(file)){out.write(firmware);}
+  assertEquals("",NativeCore.open(file.getPath()));byte[] frame=NativeCore.frame(3000);assertEquals(5,frame[2048]);assertEquals(255,frame[32*41]&255);
+  byte[] state=NativeCore.save();assertTrue(state.length>10000);
+  for(int code:CalculatorView.CODES){NativeCore.key(code,true);NativeCore.frame(100);NativeCore.key(code,false);}
+  assertTrue(NativeCore.restore(state));assertFalse(NativeCore.restore(new byte[3]));assertEquals("",NativeCore.error());
+  // Activate the same fixture through normal app startup, then drive rendered keys.
+  File appRom=new File(a.getFilesDir(),"rom.bin");try(FileOutputStream out=new FileOutputStream(appRom)){out.write(firmware);}
+  getInstrumentation().runOnMainSync(a::finish);SystemClock.sleep(400);
+  Intent intent=new Intent(getInstrumentation().getTargetContext(),MainActivity.class);intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+  MainActivity live=(MainActivity)getInstrumentation().startActivitySync(intent);SystemClock.sleep(700);CalculatorView v=view(live);assertTrue(v.ready);shot("02-synthetic-rom-portrait");
+  for(int i=0;i<CalculatorView.RECTS.length;i++){
+   android.graphics.RectF r=CalculatorView.RECTS[i];assertEquals(i,v.keyAt(r.centerX(),r.centerY()));
+   touch(live,v,i,true);SystemClock.sleep(85);touch(live,v,i,false);SystemClock.sleep(45);
+  }
+  // Verify a visible key press travels through Android touch, queue, KO/KI and MCU to VRAM.
+  touch(live,v,10,true);SystemClock.sleep(150);assertEquals(254,v.lcd[32*41]&255);shot("03-touch-key-1");touch(live,v,10,false);SystemClock.sleep(160);assertEquals(255,v.lcd[32*41]&255);
+  live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);SystemClock.sleep(700);shot("04-synthetic-rom-landscape");
+  live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);SystemClock.sleep(500);
+  // Background / resume. Core and persisted app state must remain available offline.
+  getInstrumentation().getUiAutomation().executeShellCommand("input keyevent 3").close();SystemClock.sleep(400);getInstrumentation().startActivitySync(intent);SystemClock.sleep(500);assertTrue(v.ready);
+  getInstrumentation().runOnMainSync(live::finish);SystemClock.sleep(500);MainActivity reopened=(MainActivity)getInstrumentation().startActivitySync(intent);SystemClock.sleep(700);assertTrue(view(reopened).ready);shot("05-restored-state");
+  assertEquals(5,view(reopened).lcd[2048]);assertEquals("",NativeCore.error());
+  getInstrumentation().runOnMainSync(reopened::finish);SystemClock.sleep(300);
+ }
+}
