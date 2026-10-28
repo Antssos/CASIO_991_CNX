@@ -32,7 +32,7 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
  }
  private CalculatorView view(MainActivity a){return (CalculatorView)((android.view.ViewGroup)a.findViewById(android.R.id.content)).getChildAt(0);}
  private void touch(MainActivity a,CalculatorView v,int index,boolean down){
-  float width=v.getWidth()-v.getPaddingLeft()-v.getPaddingRight(),height=v.getHeight()-v.getPaddingTop()-v.getPaddingBottom();float s=Math.min(width/344f,height/720f),ox=v.getPaddingLeft()+(width-344*s)/2,oy=v.getPaddingTop()+(height-720*s)/2;
+  float width=v.getWidth()-v.getPaddingLeft()-v.getPaddingRight(),height=v.getHeight()-v.getPaddingTop()-v.getPaddingBottom()-36*v.getResources().getDisplayMetrics().density;float s=Math.min(width/SkinGeometry.WIDTH,height/SkinGeometry.HEIGHT),ox=v.getPaddingLeft()+(width-SkinGeometry.WIDTH*s)/2,oy=v.getPaddingTop()+36*v.getResources().getDisplayMetrics().density+(height-SkinGeometry.HEIGHT*s)/2;
   android.graphics.RectF r=CalculatorView.RECTS[index];float x=ox+r.centerX()*s,y=oy+r.centerY()*s;
   getInstrumentation().runOnMainSync(()->{MotionEvent e=MotionEvent.obtain(SystemClock.uptimeMillis(),SystemClock.uptimeMillis(),down?MotionEvent.ACTION_DOWN:MotionEvent.ACTION_UP,x,y,0);v.dispatchTouchEvent(e);e.recycle();});
  }

@@ -30,3 +30,10 @@
 ## 0.2 固件兼容性样本
 
 使用 CasioEmuNeo v0.5.0 完整发行包中的 fx991cnx ROM 做临时兼容性测试。其公开可下载不被解释为取得 Casio 再分发授权，GPL-3.0 不自动覆盖该 ROM；不随源码、APK、测试 APK、Artifact 或 Release 提供。源码中仅记录长度、SHA-256、操作序列和显示区域摘要，测试截图为实际执行结果。
+
+## 0.3 面板与设置
+
+- 四套面板为项目代码绘制，以用户给出的照片作为外观参考，不直接复制、裁切或打包照片像素，也不包含预制的原机菜单画面。
+- AndroidSVG 1.4，Paul LeBeau / BigBadaboom，Apache-2.0：https://github.com/BigBadaboom/androidsvg 。仅解析 APK 内置 SVG 并绘制到原生 Canvas，不访问网络。
+- 部分轮廓由 DejaVu Sans / DejaVu Sans Condensed / DejaVu Serif Italic 和 Noto Sans CJK SC 字形转换而来，字体原作者版权与许可分别保留在 `licenses/DejaVu-copyright-and-license.txt`、`licenses/Noto-CJK-copyright-and-OFL.txt`。只使用必要字符的图形轮廓，未打包完整字体；对应许可也存放在 APK 的 assets/licenses 中。
+- `key_click.wav` 是本项目用数学波形生成的短音效，GPL-3.0；没有外部录音或音频素材。

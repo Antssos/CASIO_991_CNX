@@ -55,7 +55,7 @@ adb pull /sdcard/Pictures/fx991-screens/ screenshots/
 
 ## GitHub Actions
 
-根目录 `.github/workflows/fx991cnx-android.yml` 自动安装 SDK/NDK、构建两个 ABI、运行 Linux 原生测试和离线 Android Emulator 测试，上传 APK、SHA-256、匹配源码和测试报告。可在分支提交触发或手动运行。临时预览签名不能保证跨 CI 构建直接升级。
+根目录 `.github/workflows/fx991cnx-android.yml` 自动安装 SDK/NDK、构建两个 ABI，仅检查打包结果，上传 APK、SHA-256、匹配源码和验证记录。可在分支提交触发或手动运行。临时预览签名不能保证跨 CI 构建直接升级。
 
 
 ## 原机固件兼容性测试（0.2）
@@ -72,3 +72,17 @@ build/rom-probe /path/to/your/rom.bin /path/to/input.script
 ```
 
 脚本支持 `tick 4000000`、`tap 0x60` 和 `dump /path/to/frame.lcd`，输出为 2048 字节 VRAM 加模式、对比度各一字节。该工具不包含或生成固件。
+
+## 0.3：四主题版构建方式
+
+本轮按用户要求不运行任何 Android 测试。常用构建仅为：
+
+```sh
+./gradlew :app:assembleRelease --no-daemon
+```
+
+新增离线渲染依赖 `com.caverock:androidsvg-aar:1.4`（Apache-2.0）。四套 SVG、几何代码、音效与许可证均已提交，无需生成素材即可构建 APK。
+
+如需修改面板，再运行 `python tools/generate_skins.py`。生成器使用 Python fontTools 和 Debian/Ubuntu 的 fonts-dejavu-core、fonts-noto-cjk，把少量标签字形转成路径，并同时写入 `SkinGeometry.java`，避免绘制与热区分开维护。桌面 PNG 预览可由 CairoSVG 渲染，预览工具不属于 Android 运行依赖。面板使用 344×736 设计坐标，顶部设置入口另占 36 dp；这些坐标仅属于界面，不改变固件键盘矩阵。
+
+当前 CI 不安装或启动 Emulator，也不调用 connectedAndroidTest；仅编译、检查签名/对齐/权限/内置素材，然后上传 APK 与完整源码。历史 Android 测试代码保留供后续自愿使用，不作为本次完成条件。

@@ -32,8 +32,8 @@ public class FirmwareAcceptanceTest extends ActivityInstrumentationTestCase2<Mai
   assertTrue("ROM did not boot",view.ready);assertEquals(5,view.lcd[2048]);SystemClock.sleep(500);
  }
  private void touch(int index,boolean down){
-  float width=view.getWidth()-view.getPaddingLeft()-view.getPaddingRight(),height=view.getHeight()-view.getPaddingTop()-view.getPaddingBottom();
-  float scale=Math.min(width/344f,height/720f),ox=view.getPaddingLeft()+(width-344*scale)/2,oy=view.getPaddingTop()+(height-720*scale)/2;
+  float width=view.getWidth()-view.getPaddingLeft()-view.getPaddingRight(),height=view.getHeight()-view.getPaddingTop()-view.getPaddingBottom()-36*view.getResources().getDisplayMetrics().density;
+  float scale=Math.min(width/SkinGeometry.WIDTH,height/SkinGeometry.HEIGHT),ox=view.getPaddingLeft()+(width-SkinGeometry.WIDTH*scale)/2,oy=view.getPaddingTop()+36*view.getResources().getDisplayMetrics().density+(height-SkinGeometry.HEIGHT*scale)/2;
   RectF rect=CalculatorView.RECTS[index];float x=ox+rect.centerX()*scale,y=oy+rect.centerY()*scale;
   getInstrumentation().runOnMainSync(()->{MotionEvent e=MotionEvent.obtain(SystemClock.uptimeMillis(),SystemClock.uptimeMillis(),down?MotionEvent.ACTION_DOWN:MotionEvent.ACTION_UP,x,y,0);view.dispatchTouchEvent(e);e.recycle();});
  }

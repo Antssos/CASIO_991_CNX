@@ -1,4 +1,4 @@
-name: Publish verified fx991cnx preview
+name: Publish fx991cnx appearance preview
 on:
   push:
     branches: [feat/fx991cnx-android]
@@ -6,70 +6,85 @@ on:
   workflow_dispatch:
     inputs:
       run_id:
-        description: Successful fx991cnx Android APK run ID
-        required: true
-        default: '40673988866'
+        description: Optional successful build-only run ID
+        required: false
 permissions:
   contents: read
 jobs:
   publish:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publish-fx991cnx]')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions:
       contents: write
       actions: read
     env:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
-      VERIFIED_RUN_ID: ${{ github.event.inputs.run_id || '40673988866' }}
-      RELEASE_TAG: fx991cnx-v0.2.0-preview
+      REQUESTED_RUN: ${{ github.event.inputs.run_id }}
+      RELEASE_TAG: fx991cnx-v0.3.0-preview
     steps:
       - uses: actions/checkout@v4
-      - name: Require successful build and Android runtime verification
+      - name: Select the matching build and require success
         id: verified
         run: |
-          [[ "$VERIFIED_RUN_ID" =~ ^[0-9]+$ ]]
-          gh run watch "$VERIFIED_RUN_ID" --interval 30 --exit-status
-          test "$(gh api "repos/$GH_REPO/actions/runs/$VERIFIED_RUN_ID" --jq .conclusion)" = success
-          test "$(gh api "repos/$GH_REPO/actions/runs/$VERIFIED_RUN_ID" --jq .head_branch)" = feat/fx991cnx-android
-          commit=$(gh api "repos/$GH_REPO/actions/runs/$VERIFIED_RUN_ID" --jq .head_sha)
+          build_run="$REQUESTED_RUN"
+          if test -z "$build_run"; then
+            for attempt in $(seq 1 24); do
+              build_run=$(gh run list --workflow fx991cnx-android.yml --commit "$GITHUB_SHA" --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+              if [[ "$build_run" =~ ^[0-9]+$ ]]; then break; fi
+              sleep 5
+            done
+          fi
+          [[ "$build_run" =~ ^[0-9]+$ ]]
+          gh run watch "$build_run" --interval 30 --exit-status
+          test "$(gh api "repos/$GH_REPO/actions/runs/$build_run" --jq .conclusion)" = success
+          test "$(gh api "repos/$GH_REPO/actions/runs/$build_run" --jq .head_branch)" = feat/fx991cnx-android
+          commit=$(gh api "repos/$GH_REPO/actions/runs/$build_run" --jq .head_sha)
+          echo "run=$build_run" >> "$GITHUB_OUTPUT"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
       - uses: actions/download-artifact@v4
         with:
           github-token: ${{ github.token }}
           repository: ${{ github.repository }}
-          run-id: ${{ env.VERIFIED_RUN_ID }}
+          run-id: ${{ steps.verified.outputs.run }}
           name: fx991cnx-arm64-release
           path: verified-artifact
-      - name: Verify and package evidence
+      - name: Verify delivery and package static theme previews
+        env:
+          BUILD_RUN: ${{ steps.verified.outputs.run }}
         run: |
-          cd verified-artifact/delivery
+          cd verified-artifact
           sha256sum -c SHA256SUMS.txt
-          test -f screenshots/09-landscape-stable.png
-          test -f screenshots/fx991-screens/12-real-one-fifth.png
-          test -f firmware-android-test.txt
-          rg -F 'OK (1 test)' firmware-android-test.txt
-          zip -qr screenshots.zip screenshots
-          (cd .. && zip -qr delivery/android-test-results.zip app/build/reports/androidTests)
-          printf '\n\n## 本次发布验证\n\n选取的 Actions 运行：https://github.com/%s/actions/runs/%s 。编译、原生 sanitizer、离线 Android instrumentation、稳定横屏布局断言、进程恢复、平板截图及 release 安装步骤均成功。\n\n横屏最终截图见 screenshots.zip 内 screenshots/09-landscape-stable.png；该图由 ADB 从布局稳定后的设备读取。本次另有指定 fx-991CN X 原机固件测试通过，实际 1/5、0.2、中文 SETUP、根式、矩阵、二次方程及结果/变量恢复的截图见截图包。未逐项验证的其余功能仍以已知限制为准。\n' "$GH_REPO" "$VERIFIED_RUN_ID" >> TEST_REPORT.md
-      - name: Upload complete release and publish preview
+          test -f VALIDATION.txt
+          test -f theme-previews/blue.png
+          test -f theme-previews/ivory.png
+          test -f theme-previews/pink.png
+          test -f theme-previews/black.png
+          zip -qr theme-previews.zip theme-previews
+          printf '\n\n## 本次发布构建\n\nhttps://github.com/%s/actions/runs/%s 编译及打包检查成功。按用户要求，未执行 Android 运行测试，由用户安装验收。theme-previews.zip 为静态矢量面板预览，不是运行截图。\n' "$GH_REPO" "$BUILD_RUN" >> TEST_REPORT.md
+      - name: Publish installable APK, matching source and documentation
         env:
           VERIFIED_COMMIT: ${{ steps.verified.outputs.commit }}
+          BUILD_RUN: ${{ steps.verified.outputs.run }}
         run: |
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --draft --prerelease --target "$VERIFIED_COMMIT" --title 'fx-991CN X Emulator 0.2.0 原机固件兼容性预览版（需合法 ROM）'
+            gh release create "$RELEASE_TAG" --draft --prerelease --target "$VERIFIED_COMMIT" --title 'fx-991CN X Emulator 0.3.0 · 四主题与反馈设置'
           fi
-          gh release upload "$RELEASE_TAG" verified-artifact/delivery/fx991cnx-arm64-release.apk verified-artifact/delivery/fx991cnx-source.zip verified-artifact/delivery/README.md verified-artifact/delivery/BUILD.md verified-artifact/delivery/TEST_REPORT.md verified-artifact/delivery/THIRD_PARTY_NOTICES.md verified-artifact/delivery/LICENSE verified-artifact/delivery/SHA256SUMS.txt verified-artifact/delivery/screenshots.zip verified-artifact/delivery/android-test-results.zip verified-artifact/delivery/firmware-android-test.txt --clobber
-          cat > /tmp/release-notes.md <<EOF_NOTES
-          Android 10+、arm64-v8a，下载安装 fx991cnx-arm64-release.apk；无需开发环境。首次导入您有权使用的 256 KiB fx-991CN X 原机 ROM，此后离线运行。没有广告、网络权限或浏览器依赖。
+          gh release upload "$RELEASE_TAG" verified-artifact/fx991cnx-arm64-release.apk verified-artifact/fx991cnx-source.zip verified-artifact/README.md verified-artifact/BUILD.md verified-artifact/TEST_REPORT.md verified-artifact/THIRD_PARTY_NOTICES.md verified-artifact/LICENSE verified-artifact/SHA256SUMS.txt verified-artifact/VALIDATION.txt verified-artifact/theme-previews.zip --clobber
+          cat > /tmp/fx-release-notes.md <<EOF_NOTES
+          Android 10+、arm64-v8a。下载 fx991cnx-arm64-release.apk 安装，无需开发环境。
 
-          **已使用指定 fx-991CN X 原机固件完成兼容性测试。APK 不含 ROM，首次仍需从您有权使用的文件中导入；其他固件版本及尚未逐项测试的功能不作保证。**
+          根据用户给出的真机图重做蓝、白、粉、黑四套面板：品牌区与太阳能板、LCD、四瓣方向键、键帽、全套矢量字符及黄/红/蓝色次功能标记。数字、运算符及定积分模板为独立矢量形状。
 
-          真实 nX-U8 C++/JNI 核心。Android Emulator 在断网条件下，通过实际触摸验证 10×0.25÷(10+2.5)=1/5、S⇔D=0.2、中文 SETUP、ALPHA/DEL、9+√2、2×2 矩阵乘法和二次方程根 3/2，并验证原机结果及 A=5 变量在重开后保留。另有合成固件回归、稳定横屏、平板及 x86_64 release 安装测试。arm64 已编译，尚无 arm64 实机运行证据。
+          右上角“设置”或长按机身顶部：四主题、震动开关及三档强度、按键音开关及音量，自动保存。按键音默认关闭，静音或振动模式下不播放。
 
-          对应验证：https://github.com/$GH_REPO/actions/runs/$VERIFIED_RUN_ID
+          按用户要求，本轮只实际编译及检查签名、16 KiB 对齐、权限和内置资源，**没有执行 Android 运行测试，由用户安装验收**。附件 theme-previews.zip 是静态素材预览，不是设备截图；不宣称像素级完美复刻。
 
-          下载包包含完整 GPL-3.0 源码、许可、中文说明、构建步骤、测试报告、实际截图、Android 测试结果与 SHA-256。截图包同时包含原机固件实际运行画面与 TEST ROM 合成固件回归画面；两者都有明确文件名。原机 ROM 仅在测试设备临时使用，不进入任何发布附件。开发签名预览版跨构建可能需卸载重装。私有仓库下载需有权限的 GitHub 账户。
+          构建与 Artifact：https://github.com/$GH_REPO/actions/runs/$BUILD_RUN
+
+          仍采用真实 nX-U8 C++/JNI 核心，所有计算由导入的固件执行。**APK 不含 ROM，首次需导入自己有权使用的 fx-991CN X 256 KiB 固件。** 没有广告、网络、存储或录音权限；仅有按键震动所需 VIBRATE 权限。开发签名跨构建可能需要卸载重装，请保留自己的 ROM 文件。私有仓库需有权限的 GitHub 账户下载。
+
+          附件包含 APK、GPL-3.0 完整源码、中文说明、可复现构建步骤、验证记录、全部许可证、四主题预览及 SHA-256。
           EOF_NOTES
-          gh release edit "$RELEASE_TAG" --draft=false --prerelease --target "$VERIFIED_COMMIT" --notes-file /tmp/release-notes.md
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease --target "$VERIFIED_COMMIT" --notes-file /tmp/fx-release-notes.md

@@ -7,9 +7,9 @@ on:
 permissions:
   contents: read
 jobs:
-  build-test:
+  build-package:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 25
     defaults:
       run:
         working-directory: fx991cnx-android
@@ -22,96 +22,41 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           packages: platform-tools
-      - name: Native core sanitizer tests
-        run: tests/run-native.sh | tee native-test.txt
       - name: Install pinned SDK and NDK
         run: sdkmanager 'platforms;android-35' 'build-tools;35.0.0' 'ndk;27.2.12479018' 'cmake;3.22.1'
-      - name: Signing key for this preview build
+      - name: Preview signing key
         run: |
           mkdir -p "$HOME/.android"
           test -f "$HOME/.android/debug.keystore" || keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
-      - name: Build installable release and test APKs
-        run: ./gradlew :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon --console=plain
-      - name: Prepare separately supplied firmware for compatibility testing only
+      - name: Build installable release APKs only
+        run: ./gradlew :app:assembleRelease --no-daemon --console=plain
+      - name: Check APK signature, alignment and packaged assets
         run: |
-          curl --fail --silent --show-error -L https://github.com/qiufuyu123/CasioEmuNeo/releases/download/v0.5.0/full.CasioEmuNeo-Mingw-portable-v0.5.zip -o "$RUNNER_TEMP/fx991-upstream.zip"
-          python - <<'PY_ROM'
-          import os, zipfile, hashlib
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose app/build/outputs/apk/release/fx991cnx-arm64-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 app/build/outputs/apk/release/fx991cnx-arm64-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump permissions app/build/outputs/apk/release/fx991cnx-arm64-release.apk
+          python - <<'PY_PACKAGE'
+          from zipfile import ZipFile
           from pathlib import Path
-          temporary=Path(os.environ['RUNNER_TEMP'])
-          with zipfile.ZipFile(temporary/'fx991-upstream.zip') as archive:
-              data=archive.read('release/fx991cnx/rom.bin')
-          assert len(data)==262144
-          assert hashlib.sha256(data).hexdigest()=='8b6b6430f96858a8b3e765796e2d6f340bc7073ac9b0aa464775f15e53a10788'
-          (temporary/'fx991-test-only.rom').write_bytes(data)
-          print('Verified external ROM fingerprint; firmware is not an APK asset or artifact.')
-          PY_ROM
-      - name: Enable KVM
-        run: |
-          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
-          sudo udevadm control --reload-rules
-          sudo udevadm trigger --name-match=kvm
-      - name: Offline Android Emulator instrumentation
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: 30
-          arch: x86_64
-          profile: pixel_2
-          disable-animations: true
-          working-directory: fx991cnx-android
-          script: |
-            adb shell settings put global airplane_mode_on 1
-            adb shell svc wifi disable
-            adb shell svc data disable
-            mkdir -p screenshots
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=org.fx991cnx.emulator.EmulatorTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --console=plain || { adb pull /sdcard/Pictures/fx991-screens/ screenshots/; adb logcat -d -s AndroidRuntime:E > screenshots/android-runtime.log; exit 1; }
-            adb shell am force-stop org.fx991cnx.emulator
-            adb shell "run-as org.fx991cnx.emulator sh -c 'cat > files/rom.bin'" < "$RUNNER_TEMP/fx991-test-only.rom"
-            adb shell am instrument -w -r -e class org.fx991cnx.emulator.FirmwareAcceptanceTest org.fx991cnx.emulator.test/android.test.InstrumentationTestRunner | tee firmware-android-test.txt
-            adb pull /sdcard/Pictures/fx991-screens/ screenshots/
-            rg -F 'OK (1 test)' firmware-android-test.txt
-            adb shell am force-stop org.fx991cnx.emulator
-            adb shell am start -W -n org.fx991cnx.emulator/.MainActivity
-            sleep 2
-            adb exec-out screencap -p > screenshots/06-process-restart.png
-            adb shell settings put system accelerometer_rotation 0
-            adb shell settings put system user_rotation 1
-            adb shell am force-stop org.fx991cnx.emulator
-            adb shell am start -W -n org.fx991cnx.emulator/.MainActivity
-            sleep 3
-            adb exec-out screencap -p > screenshots/09-landscape-stable.png
-            adb shell settings put system user_rotation 0
-            adb shell wm size 1600x2560
-            adb shell wm density 240
-            adb shell am force-stop org.fx991cnx.emulator
-            adb shell am start -W -n org.fx991cnx.emulator/.MainActivity
-            sleep 2
-            adb exec-out screencap -p > screenshots/07-tablet.png
-            adb shell wm size reset
-            adb shell wm density reset
-            adb uninstall org.fx991cnx.emulator
-            adb install app/build/outputs/apk/release/fx991cnx-x86_64-release.apk
-            adb shell am start -W -n org.fx991cnx.emulator/.MainActivity
-            sleep 2
-            adb exec-out screencap -p > screenshots/08-release-installed.png
-      - name: Package release and matching source
-        if: always()
+          for path in Path('app/build/outputs/apk/release').glob('*.apk'):
+              with ZipFile(path) as archive:
+                  names=archive.namelist()
+                  assert all('assets/skins/'+theme+'.svg' in names for theme in ['blue','ivory','pink','black'])
+                  assert not any(name.endswith(('.rom','.bin')) and name.startswith('assets/') for name in names)
+                  print(path.name, 'four built-in faceplates, no bundled ROM')
+          PY_PACKAGE
+      - name: Package matching source and delivery files
         run: |
           mkdir -p delivery
-          cp app/build/outputs/apk/release/fx991cnx-arm64-release.apk delivery/ || true
+          cp app/build/outputs/apk/release/fx991cnx-arm64-release.apk delivery/
           cp README.md BUILD.md TEST_REPORT.md LICENSE THIRD_PARTY_NOTICES.md delivery/
-          cp firmware-android-test.txt delivery/ || true
-          cp -r screenshots delivery/ || true
+          cp -r docs/theme-previews delivery/
           git -C .. archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD fx991cnx-android .github/workflows/fx991cnx-android.yml .github/workflows/fx991cnx-publish.yml
+          printf '用户要求本轮不执行 Android 测试。仅编译 release 并检查签名、对齐、权限与内置素材。\n四套 PNG 为静态素材预览，不是设备运行截图。\n' > delivery/VALIDATION.txt
           cd delivery
           sha256sum fx991cnx-arm64-release.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
-        if: always()
         with:
           name: fx991cnx-arm64-release
-          path: |
-            fx991cnx-android/delivery/
-            fx991cnx-android/app/build/reports/androidTests/
-            fx991cnx-android/native-test.txt
-            fx991cnx-android/firmware-android-test.txt
+          path: fx991cnx-android/delivery/
           retention-days: 90
