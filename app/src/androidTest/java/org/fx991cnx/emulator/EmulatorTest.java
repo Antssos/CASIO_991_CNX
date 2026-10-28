@@ -67,7 +67,7 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
   live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);SystemClock.sleep(700);shot("04-synthetic-rom-landscape");
   live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);SystemClock.sleep(500);
   // Background / resume. Core and persisted app state must remain available offline.
-  shell("input keyevent 3");SystemClock.sleep(400);getInstrumentation().startActivitySync(intent);SystemClock.sleep(500);assertTrue(v.ready);
+  shell("input keyevent 3");SystemClock.sleep(400);getInstrumentation().getTargetContext().startActivity(new Intent(getInstrumentation().getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));SystemClock.sleep(500);assertTrue(v.ready);touch(live,v,10,true);awaitPixel(v,254);touch(live,v,10,false);awaitPixel(v,255);
   getInstrumentation().runOnMainSync(live::finish);SystemClock.sleep(500);MainActivity reopened=(MainActivity)getInstrumentation().startActivitySync(intent);SystemClock.sleep(700);assertTrue(view(reopened).ready);shot("05-restored-state");
   assertEquals(5,view(reopened).lcd[2048]);assertEquals("",NativeCore.error());
   getInstrumentation().runOnMainSync(reopened::finish);SystemClock.sleep(300);
