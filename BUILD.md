@@ -48,7 +48,7 @@ adb shell settings put global airplane_mode_on 1
 adb shell svc wifi disable
 adb shell svc data disable
 ./gradlew :app:connectedDebugAndroidTest
-adb pull /sdcard/Android/data/org.fx991cnx.emulator/files/screenshots/ screenshots/
+adb pull /sdcard/Pictures/fx991-screens/ screenshots/
 ```
 
 测试 APK 自行生成原创诊断固件。它只绘制 TEST ROM 和扫描键盘；不含 Casio 专有代码，不随发布 APK 安装，也不模拟任何 Casio 数学功能。`app/src/androidTest` 不编入发布 APK。

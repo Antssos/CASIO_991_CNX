@@ -11,9 +11,12 @@ import java.util.*;
 public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity> {
  public EmulatorTest(){super(MainActivity.class);}
  private void shot(String name)throws Exception{
-  File dir=new File(getInstrumentation().getTargetContext().getExternalFilesDir(null),"screenshots");dir.mkdirs();
-  Bitmap b=getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(b);try(FileOutputStream out=new FileOutputStream(new File(dir,name+".png"))){b.compress(Bitmap.CompressFormat.PNG,100,out);}b.recycle();
+  Bitmap b=getInstrumentation().getUiAutomation().takeScreenshot();assertNotNull(b);
+  android.content.ContentValues values=new android.content.ContentValues();values.put(android.provider.MediaStore.Images.Media.DISPLAY_NAME,name+".png");values.put(android.provider.MediaStore.Images.Media.MIME_TYPE,"image/png");values.put(android.provider.MediaStore.Images.Media.RELATIVE_PATH,"Pictures/fx991-screens");
+  android.content.ContentResolver resolver=getInstrumentation().getTargetContext().getContentResolver();android.net.Uri uri=resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,values);assertNotNull(uri);
+  try(OutputStream out=resolver.openOutputStream(uri)){assertNotNull(out);assertTrue(b.compress(Bitmap.CompressFormat.PNG,100,out));}b.recycle();
  }
+ private void awaitPixel(CalculatorView v,int expected)throws Exception{long end=SystemClock.uptimeMillis()+10000;while(SystemClock.uptimeMillis()<end&&(v.lcd[32*41]&255)!=expected){assertEquals("",NativeCore.error());SystemClock.sleep(30);}if((v.lcd[32*41]&255)!=expected)shot("failure-keyboard");assertEquals(expected,v.lcd[32*41]&255);}
  private static void word(byte[] b,int a,int v){b[a]=(byte)v;b[a+1]=(byte)(v>>8);}
  private static byte[] fixture(){
   byte[] b=new byte[262144];Arrays.fill(b,(byte)0xff);word(b,0,0xE000);word(b,2,0x100);
@@ -57,10 +60,10 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
   MainActivity live=(MainActivity)getInstrumentation().startActivitySync(intent);SystemClock.sleep(700);CalculatorView v=view(live);assertTrue(v.ready);shot("02-synthetic-rom-portrait");
   for(int i=0;i<CalculatorView.RECTS.length;i++){
    android.graphics.RectF r=CalculatorView.RECTS[i];assertEquals(i,v.keyAt(r.centerX(),r.centerY()));
-   touch(live,v,i,true);SystemClock.sleep(85);touch(live,v,i,false);SystemClock.sleep(45);
+   touch(live,v,i,true);SystemClock.sleep(100);touch(live,v,i,false);SystemClock.sleep(100);
   }
   // Verify a visible key press travels through Android touch, queue, KO/KI and MCU to VRAM.
-  touch(live,v,10,true);SystemClock.sleep(150);assertEquals(254,v.lcd[32*41]&255);shot("03-touch-key-1");touch(live,v,10,false);SystemClock.sleep(160);assertEquals(255,v.lcd[32*41]&255);
+  assertTrue(v.ready);touch(live,v,10,true);awaitPixel(v,254);shot("03-touch-key-1");touch(live,v,10,false);awaitPixel(v,255);
   live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);SystemClock.sleep(700);shot("04-synthetic-rom-landscape");
   live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);SystemClock.sleep(500);
   // Background / resume. Core and persisted app state must remain available offline.

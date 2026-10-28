@@ -50,9 +50,9 @@ jobs:
             adb shell svc wifi disable
             adb shell svc data disable
             mkdir -p screenshots
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain || { adb pull /sdcard/Android/data/org.fx991cnx.emulator/files/screenshots/ screenshots/; adb logcat -d -s AndroidRuntime:E > screenshots/android-runtime.log; exit 1; }
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain || { adb pull /sdcard/Pictures/fx991-screens/ screenshots/; adb logcat -d -s AndroidRuntime:E > screenshots/android-runtime.log; exit 1; }
             mkdir -p screenshots
-            adb pull /sdcard/Android/data/org.fx991cnx.emulator/files/screenshots/ screenshots/
+            adb pull /sdcard/Pictures/fx991-screens/ screenshots/
             adb shell am force-stop org.fx991cnx.emulator
             adb shell am start -W -n org.fx991cnx.emulator/.MainActivity
             sleep 2
