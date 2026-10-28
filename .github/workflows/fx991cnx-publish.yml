@@ -59,11 +59,17 @@ jobs:
       - name: Preserve the original signed APK during repository migration
         if: github.event.inputs.original_apk_blob != ''
         env:
+          VERIFIED_COMMIT: ${{ steps.verified.outputs.commit }}
           ORIGINAL_APK_BLOB: ${{ github.event.inputs.original_apk_blob }}
           ORIGINAL_APK_SHA256: ${{ github.event.inputs.original_apk_sha256 }}
         run: |
           [[ "$ORIGINAL_APK_BLOB" =~ ^[0-9a-f]{40}$ ]]
           [[ "$ORIGINAL_APK_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          # Refresh repository documentation while proving all APK build inputs are unchanged.
+          git fetch --depth=1 origin "$VERIFIED_COMMIT"
+          git diff --exit-code "$VERIFIED_COMMIT" HEAD -- app gradle build.gradle settings.gradle gradle.properties gradlew
+          cp README.md BUILD.md TEST_REPORT.md LICENSE THIRD_PARTY_NOTICES.md verified-artifact/
+          git archive --format=zip --output="$PWD/verified-artifact/fx991cnx-source.zip" HEAD
           gh api "repos/$GH_REPO/git/blobs/$ORIGINAL_APK_BLOB" --jq .content | base64 --decode > verified-artifact/fx991cnx-arm64-release.apk
           cd verified-artifact
           printf '%s  fx991cnx-arm64-release.apk\n' "$ORIGINAL_APK_SHA256" > SHA256SUMS.txt
@@ -103,7 +109,7 @@ jobs:
 
           构建与 Artifact：https://github.com/$GH_REPO/actions/runs/$BUILD_RUN
 
-          仍采用真实 nX-U8 C++/JNI 核心，所有计算由导入的固件执行。**APK 不含 ROM，首次需导入自己有权使用的 fx-991CN X 256 KiB 固件。** 没有广告、网络、存储或录音权限；仅有按键震动所需 VIBRATE 权限。开发签名跨构建可能需要卸载重装，请保留自己的 ROM 文件。本仓库公开，可直接下载。
+          仍采用真实 nX-U8 C++/JNI 核心，所有计算由导入的固件执行。**APK 不含 ROM，首次需导入自己有权使用的 fx-991CN X 256 KiB 固件。** 没有广告、网络、存储或录音权限；仅有按键震动所需 VIBRATE 权限。开发签名跨构建可能需要卸载重装，请保留自己的 ROM 文件。私有仓库下载时需登录有权限的 GitHub 账号；应用安装后无需账号。
 
           附件包含 APK、GPL-3.0 完整源码、中文说明、可复现构建步骤、验证记录、全部许可证、四主题预览及 SHA-256。
           EOF_NOTES

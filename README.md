@@ -4,7 +4,7 @@ Android 10+ 原机模拟器，C++ nX-U8 核心 + NDK/JNI + 原生 Android 界面
 
 ## 下载与安装
 
-[下载 Release](https://github.com/Antssos/CASIO_991_CNX/releases/tag/fx991cnx-v0.6.0-preview)，安装 `fx991cnx-arm64-release.apk`。仓库公开，下载和使用应用均无需账户。
+[下载 Release](https://github.com/Antssos/CASIO_991_CNX/releases/tag/fx991cnx-v0.6.0-preview)，安装 `fx991cnx-arm64-release.apk`。下载需符合仓库的当前访问权限；私有时请登录有权限的 GitHub 账号。安装后的应用无需账号。
 
 首次点液晶屏，选择您有权使用的 fx-991CN X 完整 256 KiB ROM。文件仅复制到应用内部，之后离线使用，无需再次选择。支持已测试样本的精确指纹识别；未知版本需确认机型，不支持将 ES、EX 或 CW 固件转换为 CN X。
 
