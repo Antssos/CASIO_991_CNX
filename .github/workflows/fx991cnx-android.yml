@@ -49,7 +49,8 @@ jobs:
             adb shell settings put global airplane_mode_on 1
             adb shell svc wifi disable
             adb shell svc data disable
-            ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain
+            mkdir -p screenshots
+            ./gradlew :app:connectedDebugAndroidTest --no-daemon --console=plain || { adb pull /sdcard/Android/data/org.fx991cnx.emulator/files/screenshots/ screenshots/; adb logcat -d -s AndroidRuntime:E > screenshots/android-runtime.log; exit 1; }
             mkdir -p screenshots
             adb pull /sdcard/Android/data/org.fx991cnx.emulator/files/screenshots/ screenshots/
             adb shell am force-stop org.fx991cnx.emulator

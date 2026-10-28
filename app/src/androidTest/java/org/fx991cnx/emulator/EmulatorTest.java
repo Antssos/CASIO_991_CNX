@@ -34,7 +34,8 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
   getInstrumentation().runOnMainSync(()->{MotionEvent e=MotionEvent.obtain(SystemClock.uptimeMillis(),SystemClock.uptimeMillis(),down?MotionEvent.ACTION_DOWN:MotionEvent.ACTION_UP,x,y,0);v.dispatchTouchEvent(e);e.recycle();});
  }
  @Override protected void setUp()throws Exception{super.setUp();File[] files=getInstrumentation().getTargetContext().getFilesDir().listFiles();if(files!=null)for(File f:files)if(f.getName().equals("rom.bin")||f.getName().startsWith("state-v1-"))f.delete();}
- private void clickText(String text)throws Exception{android.view.accessibility.AccessibilityNodeInfo root=getInstrumentation().getUiAutomation().getRootInActiveWindow();assertNotNull(root);java.util.List<android.view.accessibility.AccessibilityNodeInfo> nodes=root.findAccessibilityNodeInfosByText(text);assertFalse("Missing UI text: "+text,nodes.isEmpty());assertTrue(nodes.get(0).performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK));}
+ private void shell(String command)throws Exception{try(InputStream in=new android.os.ParcelFileDescriptor.AutoCloseInputStream(getInstrumentation().getUiAutomation().executeShellCommand(command))){byte[] b=new byte[2048];while(in.read(b)!=-1){}}}
+ private void clickText(String text)throws Exception{long deadline=SystemClock.uptimeMillis()+10000;android.view.accessibility.AccessibilityNodeInfo root=null;while(SystemClock.uptimeMillis()<deadline){root=getInstrumentation().getUiAutomation().getRootInActiveWindow();if(root!=null){java.util.List<android.view.accessibility.AccessibilityNodeInfo> nodes=root.findAccessibilityNodeInfosByText(text);if(!nodes.isEmpty()){assertTrue(nodes.get(0).performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK));return;}}SystemClock.sleep(200);}shot("failure-ui");fail("Missing UI text: "+text+" active window: "+root);}
  public void testOfflineNativeAndTouch()throws Exception{
   MainActivity a=getActivity();SystemClock.sleep(500);shot("01-no-rom-portrait");
   // Fixture is written only by the separately installed test APK.
@@ -45,7 +46,8 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
   assertTrue(NativeCore.restore(state));assertFalse(NativeCore.restore(new byte[3]));assertEquals("",NativeCore.error());
   // Exercise the real SAF picker and its import-result handler, including model confirmation.
   getInstrumentation().runOnMainSync(a::importRom);SystemClock.sleep(600);shot("01b-system-file-picker");
-  getInstrumentation().getUiAutomation().executeShellCommand("input keyevent 4").close();SystemClock.sleep(300);
+  shell("input keyevent 4");SystemClock.sleep(600);
+  getInstrumentation().getTargetContext().startActivity(new Intent(getInstrumentation().getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));SystemClock.sleep(400);
   getInstrumentation().runOnMainSync(()->a.onActivityResult(1,android.app.Activity.RESULT_OK,new Intent().setData(android.net.Uri.fromFile(file))));
   SystemClock.sleep(500);shot("01c-rom-model-confirmation");clickText("确认并导入");SystemClock.sleep(700);assertTrue(view(a).ready);
   // Restart through normal app startup, then drive rendered keys.
@@ -62,7 +64,7 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
   live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);SystemClock.sleep(700);shot("04-synthetic-rom-landscape");
   live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);SystemClock.sleep(500);
   // Background / resume. Core and persisted app state must remain available offline.
-  getInstrumentation().getUiAutomation().executeShellCommand("input keyevent 3").close();SystemClock.sleep(400);getInstrumentation().startActivitySync(intent);SystemClock.sleep(500);assertTrue(v.ready);
+  shell("input keyevent 3");SystemClock.sleep(400);getInstrumentation().startActivitySync(intent);SystemClock.sleep(500);assertTrue(v.ready);
   getInstrumentation().runOnMainSync(live::finish);SystemClock.sleep(500);MainActivity reopened=(MainActivity)getInstrumentation().startActivitySync(intent);SystemClock.sleep(700);assertTrue(view(reopened).ready);shot("05-restored-state");
   assertEquals(5,view(reopened).lcd[2048]);assertEquals("",NativeCore.error());
   getInstrumentation().runOnMainSync(reopened::finish);SystemClock.sleep(300);
