@@ -1,76 +1,61 @@
-# 测试报告 — 0.1.0-preview
+# 测试报告 — 0.2.0-preview
 
-本报告严格区分“原生核心/原创诊断固件测试”与“Casio 原机固件功能验收”。尚未持有可用于本项目验收的合法 fx-991CN X ROM，**原机功能验收未通过（未执行），不是完整交付终点**。
+本版本在原有合成固件测试之外，增加指定 fx-991CN X 原机固件的兼容性验收。**ROM 不在 APK、源码、Artifact 或 Release 中；安装后仍须一次性导入。** 没有把上游公开发行视为卡西欧授权证明。
 
-## 已执行
+## 样本与可复核方法
 
-2026-10-28，Linux g++、AddressSanitizer/UndefinedBehaviorSanitizer/LeakSanitizer：
-
-- 原创 nX-U8 指令执行：MOV、ADD、ST、循环跳转；结果真实写入 RAM 和 LCD VRAM。
-- 49 个实体矩阵按键逐个校验 KO/KI active-low 线路，包括 SHIFT、ALPHA、MENU、方向、AC、DEL；另有 ON 重置键。
-- CPU、RAM、LCD、键盘、中断、计时器等全状态保存、修改、还原后字节一致；冷实例载入后 RAM 一致。状态有效载荷 10703 字节。
-- 以上测试通过，未发现 sanitizer 错误。最初沙箱内 LeakSanitizer 被 ptrace 限制，正常执行环境重跑通过。
-
-## Android 实际运行证据
-
-[GitHub Actions 40662774487](https://github.com/Antssos/cloudcodex/actions/runs/40662774487) 全部成功。测试提交 `e8f3652b4b545ff537552b3dff55eacdb9dbe5ef`；后续文档提交没有修改生产应用代码。
-
-- Android Emulator API 30（Android 11）、x86_64、Pixel 2，KVM 加速；断开 Wi-Fi/数据并设飞行模式后测试。
-- 一个集成测试方法覆盖多组断言，**1 test、0 failures、0 skipped**。生成真实设备截图，没有使用静态示意图代替运行截图。
-- 系统文件选择器打开/返回、导入结果处理、长度/向量检查及候选机型确认通过。测试自动调用选择器结果回调传入本地合成文件 URI；未自动点击选择器中的真实用户 ROM 文件。
-- 原创测试 ROM 由真实 MCU 绘制 `TEST ROM`，启动、50 键视觉中心热区及触摸序列通过。按住数字 1 后 MCU 的扫描结果确实写入 LCD VRAM 为 `0xFE`，松手为 `0xFF`；验证的是硬件输入链路，不是 Casio 数学语义。
-- 后台后返回并再次触摸扫描通过；结束 Activity 并重新打开可恢复运行。另用 `am force-stop` / `am start -W` 启动成功并保存截图。原生测试同时验证全状态跨冷实例还原。
-- 竖屏与 1600×2560 / 240 dpi 平板截图已核对，整台面板可见，无系统栏遮挡。首轮横屏截图捕获了旋转过渡帧；补充布局稳定断言与独立 ADB 截图后，[最终运行 40664197615](https://github.com/Antssos/cloudcodex/actions/runs/40664197615) 再次全部成功，已目视核对 [稳定横屏截图](docs/evidence/landscape-stable.png)。
-- 卸载测试应用后，**实际安装 x86_64 release APK** 成功，启动返回 `Status: ok`，显示明确的无 ROM 导入引导。
-- arm64 release 已真实构建，未在 arm64 实机或 arm64 Android Emulator 执行；不能把 x86_64 测试说成 arm64 实机验收。Android 10 / API 29 也没有独立运行测试。
-- `apksigner verify` 通过，APK Signature Scheme v2 有效；`zipalign -c -P 16 4` 通过。`aapt dump permissions` 没有任何权限声明。检查 APK assets 只有 LICENSE，没有 ROM。
-
-实际截图：[release 安装启动](docs/evidence/release-installed.png)、[原创测试固件](docs/evidence/synthetic-rom.png)、[平板](docs/evidence/tablet.png)。Artifact 中另有文件选择器、型号确认、按住数字键、状态重开和进程重启截图。
-
-本地没有 KVM，软件虚拟化未能稳定启动 Android，因此 Android 运行验收来自上述 CI，而不是本地黑屏实例。前期 CI 暴露的导入界面同步、固定按键等待和返回已有 Activity 的等待问题已修复；最终整套测试重新执行成功。
-
-## 原机计算验收矩阵
-
-| 验收项 | 状态 | 原因/说明 |
-|---|---|---|
-| `10×0.25÷(10+2.5)` → `1/5` | 未测试 | 缺少合法原机固件 |
-| S⇔D 分数/小数、根式、复杂输入 | 未测试 | 同上 |
-| 中文 MENU/SETUP、SHIFT/ALPHA 功能含义 | 未测试 | 已验证物理线路，不等于已验证固件菜单 |
-| 微积分、数值求解 | 未测试 | 同上 |
-| 矩阵、向量、复数、方程 | 未测试 | 同上 |
-| 统计、分布、数制、表格、其他模式 | 未测试 | 同上 |
-| 原机 Ans、变量、历史恢复 | 未测试 | 合成固件状态测试不能替代原机验收 |
-
-## 已知限制与原机差异
-
-- 没有 ROM 时只有明确的导入引导，不能计算。导入流程只支持 256 KiB 完整原机镜像；不支持模拟器专用镜像。
-- 机型自动识别不完整：只能检查格式与文本标识，未知固件需用户确认；没有可靠授权样本指纹库。
-- 自绘面板接近 CN X 的 50 键排列，但不是原机照片；键帽轮廓、字形、部分次功能刻字和 LCD 状态图标尚未逐项完成原机校对。
-- 主显示矩阵为真实 192×63；状态栏采用 Android 字体，不是原机图形。
-- CPU 以 2 MHz 指令 tick 调度；没有实测硬件时序标定，不能保证所有低功耗、定时或硬件细节一致。
-- 不同 ROM、不同核心存档版本不混用；CRC/长度损坏时冷启动。尚未完成真实 ROM 长时间压力测试。
-- 开发签名预览 APK，未提供稳定升级签名；完整屏幕阅读器逐键导航、ROM 导出和状态备份还未实现。
-
-## 原机固件验收的复测步骤
-
-使用有权使用的 fx-991CN X ROM 导入后，在 Android Emulator 和 arm64 实机上执行：
-
-1. 初始数学输入/数学输出下按 `1 0 × 0 . 2 5 ÷ ( 1 0 + 2 . 5 ) =`，截屏必须为 `1/5`；按 S⇔D 验证小数转换。
-2. 测 SHIFT→MENU 中文 SETUP、ALPHA→变量、方向历史、AC/DEL、长按和连续按键。
-3. 中文菜单进入矩阵/方程，完成实际运算；测试根式和复杂表达式。
-4. 输入未完成表达式、变量/历史后依次回桌面、退出、强制结束进程、重开；检查状态。
-5. 开飞行模式并关闭 Wi-Fi/移动网络，全程重复以上步骤。
-6. 保存实际截图、ROM SHA-256（不发布 ROM）和设备/API 信息后才可标记验收完成。
-
-
-## 最终发布
-
-[Release 0.1.0-preview](https://github.com/Antssos/cloudcodex/releases/tag/fx991cnx-v0.1.0-preview) 已发布（私有仓库，需要有权限的 GitHub 账户）。[Artifact](https://github.com/Antssos/cloudcodex/actions/runs/40664197615/artifacts/12805426799) 与 Release 中的 APK 完全相同。
-
-`fx991cnx-arm64-release.apk`：1087022 字节。SHA-256：
+样本来源为用户指定的 CasioEmuNeo v0.5.0 完整发行包内 `release/fx991cnx/rom.bin`，长度 262144 字节。ROM SHA-256：
 
 ```text
-9c85565a789cae37fa950d66f11a056a26b7362f4492fb665753d349fe12b6de
+8b6b6430f96858a8b3e765796e2d6f340bc7073ac9b0aa464775f15e53a10788
 ```
 
-发布工作流 [40664788124](https://github.com/Antssos/cloudcodex/actions/runs/40664788124) 成功，GitHub Release 记录的资产摘要与取回的 Artifact APK 一致。再次验证签名、16 KiB 对齐及无权限声明均通过。截图与源码对应的生产应用代码仍与首次成功验证版本相同；这里只补充测试和交付证据，**原机固件数学功能仍未验收**。
+上游同时提供了 fx-991CN X 机型定义，硬件 ID 4、真实键盘矩阵。上述指纹用于识别已测试的具体固件，不把其他 X、ES 或 CW 固件误认为中文版。未在发行包中找到单独的 Casio 固件分发许可，因此不重分发 ROM，也不在用户应用中提供自动下载功能。
+
+原生 Linux 测试使用与 APK 相同的 C++ 核心，脚本只发送物理键代码并读取 LCD VRAM。Android 测试类 `FirmwareAcceptanceTest` 则通过实际绘制按键的触摸坐标输入，不直接写数学结果。预期结果先人工核对，再以不含光标的 LCD 区域指纹自动断言；摘要和区域定义在 `app/src/androidTest/assets/rom-acceptance-goldens.json`，其中没有 ROM、字库或固件代码。
+
+## 已执行的原生原机固件测试
+
+| 操作 | 实际结果 |
+|---|---|
+| `10×0.25÷(10+2.5)` | LCD 显示 `1/5` |
+| S⇔D | LCD 显示 `0.2` |
+| SHIFT → MENU | 中文 SETUP，含输入/输出、角度单位、显示格式、工程符号 |
+| ALPHA → A、DEL | 输入 A，DEL 删除 |
+| `√2+3²`（含右方向键退出根式） | `9+√2` |
+| 定义 2×2 MatA = `[[1,2],[3,4]]`，计算 MatA×2 | `[[2,4],[6,8]]` |
+| 多项式模式，系数 1、−5、6 | 根 `x₁=3`、`x₂=2` |
+| 5 → STO → A，清屏后 ALPHA A = | `5` |
+
+这些结果均由原机 ROM 经 nX-U8 指令执行产生，未使用替代科学计算引擎。对应 Android 端到端验收的最终通过/失败，以同批 CI 的 `firmware-android-test.txt` 及设备截图为准；发布工作流只接受全部测试成功的构建。
+
+## Android 自动验收
+
+API 30（Android 11）x86_64 Emulator、Pixel 2、KVM。构建 arm64-v8a 与 x86_64，应用关闭 Wi-Fi、移动数据并设飞行模式运行。应用没有任何网络权限。
+
+- `EmulatorTest`：无 ROM 引导、系统文件选择器、合成 ROM 导入、50 键中心热区、真实 KO/KI 到 LCD 链路、后台恢复、重开、横竖屏。
+- `FirmwareAcceptanceTest`：已知 ROM 指纹识别、上述数学及中文菜单操作、实际 1/5 结果退出重开后保留、A=5 变量退出重开后保留。
+- 独立 ADB 步骤：进程强制停止再启动、稳定横屏、1600×2560 / 240 dpi 平板截图、卸载测试应用后安装 x86_64 release APK 并启动。
+- 实际截图通过设备截图接口和 `adb screencap` 保存。文件名 `12-real-one-fifth`、`14-real-decimal`、`15-real-chinese-setup`、`18-real-matrix-times-two`、`19-real-equation-root-three`、`20-real-equation-root-two`、`21-real-variable-restored` 分别对应验收项。
+
+CI 在临时目录取样和校验 ROM，将其放入临时 Android 测试设备内部。没有 ROM 资产进入编译步骤；发布包不会包含测试设备内部文件、RAM 存档或固件文件。测试结束后临时设备销毁。
+
+## 原生核心回归与打包检查
+
+`tests/run-native.sh` 的 ASan/UBSan/LeakSanitizer 测试验证 CPU 指令、RAM/LCD 访问、49 个矩阵按键、10703 字节全状态往返和跨冷实例恢复。先前 0.1 版本的完整 Android 回归记录在 [Actions 40664197615](https://github.com/Antssos/cloudcodex/actions/runs/40664197615)，当前版本重新执行相同回归并增加原机测试。
+
+发布 APK 必须通过签名检查、16 KiB 对齐检查、无权限声明检查，以及 ZIP 清单中不存在 ROM 的检查。SHA-256 以同批 `SHA256SUMS.txt` 为准，不与历史版本混用。
+
+## 仍未验证或存在差异
+
+- 没有 arm64 实机运行证据；原机固件 Android 验收使用 x86_64，同一套 C++/Java 源码。Android 10 / API 29 也尚无单独运行测试。
+- 尚未逐项验收微积分、求解器、复数、向量、统计、分布、数制、表格及所有 SHIFT/ALPHA 组合。固件具备的菜单不等于这些模式全部经过测试。
+- 只自动识别上述精确指纹；未知版本仍需人工确认并另行测试，不能承诺所有 ROM 都兼容。
+- 面板是自行绘制，键帽轮廓、字体、次功能刻字、LCD 状态栏与原机仍有差异；没有使用授权不明的原机照片。
+- tick 调度不是经硬件标定的周期精确实现；未完成长时间压力、低功耗和所有边界条件验收。
+- 预览开发签名尚无稳定升级保证；不同 CI 构建可能需卸载后重装，卸载会删除导入 ROM 和状态。请保留自己的原始 ROM 文件。
+- 本地没有 KVM，Android 验收来自 GitHub Actions；本地提供原生核心和原机 ROM 运算测试，不将本地软件虚拟化黑屏误报为 APK 启动成功。
+
+## 安装与许可
+
+APK 可直接安装，但不会开箱自动计算。首次点液晶屏，从您有权使用的文件中导入 fx-991CN X ROM；以后无需网络或再次选择文件。GPL-3.0 只覆盖模拟器和本项目代码，不自动覆盖 Casio 专有固件。

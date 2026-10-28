@@ -1,0 +1,101 @@
+{
+  "result": {
+    "region": [
+      0,
+      30,
+      192,
+      33
+    ],
+    "sha256": "15ed52a6d9072a95eb8ad8f48dc5c7e8d2d824bf38e5daff77af6e5de96d2243"
+  },
+  "decimal": {
+    "region": [
+      0,
+      30,
+      192,
+      33
+    ],
+    "sha256": "0e38b1ac69fae4f41060f0c945926f74ff3d453234adc638887867d75ef96e34"
+  },
+  "matrix-result": {
+    "region": [
+      0,
+      0,
+      192,
+      63
+    ],
+    "sha256": "4e1c5a20eaec4a0b72bcd67cc8ec2ff2a45f8e3e89d296fa06225e98bb66f48a"
+  },
+  "equation-root2": {
+    "region": [
+      0,
+      30,
+      192,
+      33
+    ],
+    "sha256": "ebe7de648ea01bdd1d2364c37766b976fdc9fd3ad23b04fcd6f23735121c1ab8"
+  },
+  "equation-second-root": {
+    "region": [
+      0,
+      30,
+      192,
+      33
+    ],
+    "sha256": "014013106586257ffa3dd36afc8b90dd38b197c757940b7d234a96e59bcdf3dd"
+  },
+  "setup-menu": {
+    "region": [
+      0,
+      0,
+      192,
+      63
+    ],
+    "sha256": "49e595dd93f428c113464c8dcc2cfb9349fba8cc7f0bb67301bc295f46603497"
+  },
+  "alpha-variable": {
+    "region": [
+      0,
+      0,
+      10,
+      13
+    ],
+    "sha256": "b69f1960618cd6306d3dffe3a8d69e43628b2f4605354329a8c94a8b63d7fe4e"
+  },
+  "delete": {
+    "region": [
+      16,
+      0,
+      176,
+      63
+    ],
+    "sha256": "da14ceacc5670be8524855adf9d0af7205acb4fdfefb17fbf1376f6b493dda89"
+  },
+  "roots-result": {
+    "region": [
+      0,
+      30,
+      192,
+      33
+    ],
+    "sha256": "fb98f8b808ef1f3b2aaab93253eecf0c778594ddd6464f2ac79773c5a901d5c7"
+  },
+  "variable-five": {
+    "region": [
+      0,
+      30,
+      192,
+      33
+    ],
+    "sha256": "b1c6275fce8d727b34baab8514726bc1cae9fe8f2dfb4491ab54df56622722c2"
+  },
+  "menu": {
+    "region": [
+      0,
+      0,
+      192,
+      63
+    ],
+    "sha256": "dabb4e520338d6c78be51fe70840bad83fb4cf1d4cabb52a2084f794e5b0bf0f"
+  }
+}

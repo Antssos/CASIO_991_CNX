@@ -1,12 +1,12 @@
 # fx-991CN X Emulator
 
-Android 10+ 离线原机模拟器的 **0.1.0 预览版**。采用 CasioEmuNeo 的 nX-U8 C++ 核心、NDK/JNI 和原生 Android 面板，不含普通科学计算引擎、WebView、广告或网络权限。
+Android 10+ 离线原机模拟器的 **0.2.0 预览版**。采用 CasioEmuNeo 的 nX-U8 C++ 核心、NDK/JNI 和原生 Android 面板，不含普通科学计算引擎、WebView、广告或网络权限。
 
-**本版本没有内置 Casio ROM，也尚未完成原机固件的计算功能验收，不能视为已验收的日常计算器。** 已实现真实 CPU、键盘扫描、LCD 和全机状态存取；自编测试固件通过不代表原机分数、矩阵、方程等功能通过。具体证据与限制见 [TEST_REPORT.md](TEST_REPORT.md)。
+**本版本不内置 Casio ROM，首次需要导入。** 已用指定 fx-991CN X ROM 在原生核心中运行分数/小数、中文 SETUP、根式、矩阵和二次方程，Android 端到端测试及截图随同批构建提供；尚未逐项验证所有原机功能。具体证据与限制见 [TEST_REPORT.md](TEST_REPORT.md)。
 
 ## 下载与安装
 
-优先从 [GitHub Release](https://github.com/Antssos/cloudcodex/releases/tag/fx991cnx-v0.1.0-preview) 下载 APK。仓库为私有，需有权限的 GitHub 账户。也可在本仓库 [fx991cnx Android APK 工作流](https://github.com/Antssos/cloudcodex/actions/workflows/fx991cnx-android.yml) 的成功运行中下载 `fx991cnx-arm64-release` Artifact，解压后安装 `fx991cnx-arm64-release.apk`。无需 Android Studio。Release 和 Artifact 下载均需要登录有权限的 GitHub 账户。
+优先从 [GitHub Release](https://github.com/Antssos/cloudcodex/releases/tag/fx991cnx-v0.2.0-preview) 下载 APK。仓库为私有，需有权限的 GitHub 账户。也可在本仓库 [fx991cnx Android APK 工作流](https://github.com/Antssos/cloudcodex/actions/workflows/fx991cnx-android.yml) 的成功运行中下载 `fx991cnx-arm64-release` Artifact，解压后安装 `fx991cnx-arm64-release.apk`。无需 Android Studio。Release 和 Artifact 下载均需要登录有权限的 GitHub 账户。
 
 1. 手机需 Android 10 或以上、arm64 CPU。允许文件管理器“安装未知应用”。
 2. 对照同批 `SHA256SUMS.txt` 校验 APK，点击安装。
@@ -14,7 +14,7 @@ Android 10+ 离线原机模拟器的 **0.1.0 预览版**。采用 CasioEmuNeo �
 4. 导入保存在应用内部，之后不再选择文件。应用本身没有下载 ROM 的功能，不提供未授权固件获取链接。
 5. 长按顶部型号可重新导入、清除计算器状态或阅读 GPL 许可证。
 
-导入器会检查长度、向量和可识别的文本标识。**没有经过授权验证的 ROM 指纹数据库，无法自动、可靠地辨别全部版本**；无型号标识时要求您确认候选 ROM 的来源和机型。错误机型不会被转换为中文版。
+导入器会检查长度、向量、文本标识和一个已测试的精确 SHA-256 指纹。已知样本自动识别为 fx-991CN X；**未知版本无法自动可靠识别全部机型**，仍要求您确认候选 ROM 的来源和机型。错误机型不会被转换为中文版。
 
 ## 使用
 

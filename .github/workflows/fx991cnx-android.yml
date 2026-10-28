@@ -32,6 +32,20 @@ jobs:
           test -f "$HOME/.android/debug.keystore" || keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
       - name: Build installable release and test APKs
         run: ./gradlew :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon --console=plain
+      - name: Prepare separately supplied firmware for compatibility testing only
+        run: |
+          curl --fail --silent --show-error -L https://github.com/qiufuyu123/CasioEmuNeo/releases/download/v0.5.0/full.CasioEmuNeo-Mingw-portable-v0.5.zip -o "$RUNNER_TEMP/fx991-upstream.zip"
+          python - <<'PY_ROM'
+          import os, zipfile, hashlib
+          from pathlib import Path
+          temporary=Path(os.environ['RUNNER_TEMP'])
+          with zipfile.ZipFile(temporary/'fx991-upstream.zip') as archive:
+              data=archive.read('release/fx991cnx/rom.bin')
+          assert len(data)==262144
+          assert hashlib.sha256(data).hexdigest()=='8b6b6430f96858a8b3e765796e2d6f340bc7073ac9b0aa464775f15e53a10788'
+          (temporary/'fx991-test-only.rom').write_bytes(data)
+          print('Verified external ROM fingerprint; firmware is not an APK asset or artifact.')
+          PY_ROM
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -50,9 +64,12 @@ jobs:
             adb shell svc wifi disable
             adb shell svc data disable
             mkdir -p screenshots
-            ./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --console=plain || { adb pull /sdcard/Pictures/fx991-screens/ screenshots/; adb logcat -d -s AndroidRuntime:E > screenshots/android-runtime.log; exit 1; }
-            mkdir -p screenshots
+            ./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=org.fx991cnx.emulator.EmulatorTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true --no-daemon --console=plain || { adb pull /sdcard/Pictures/fx991-screens/ screenshots/; adb logcat -d -s AndroidRuntime:E > screenshots/android-runtime.log; exit 1; }
+            adb shell am force-stop org.fx991cnx.emulator
+            adb shell "run-as org.fx991cnx.emulator sh -c 'cat > files/rom.bin'" < "$RUNNER_TEMP/fx991-test-only.rom"
+            adb shell am instrument -w -r -e class org.fx991cnx.emulator.FirmwareAcceptanceTest org.fx991cnx.emulator.test/android.test.InstrumentationTestRunner | tee firmware-android-test.txt
             adb pull /sdcard/Pictures/fx991-screens/ screenshots/
+            rg -F 'OK (1 test)' firmware-android-test.txt
             adb shell am force-stop org.fx991cnx.emulator
             adb shell am start -W -n org.fx991cnx.emulator/.MainActivity
             sleep 2
@@ -83,8 +100,9 @@ jobs:
           mkdir -p delivery
           cp app/build/outputs/apk/release/fx991cnx-arm64-release.apk delivery/ || true
           cp README.md BUILD.md TEST_REPORT.md LICENSE THIRD_PARTY_NOTICES.md delivery/
+          cp firmware-android-test.txt delivery/ || true
           cp -r screenshots delivery/ || true
-          git -C .. archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD fx991cnx-android .github/workflows/fx991cnx-android.yml
+          git -C .. archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD fx991cnx-android .github/workflows/fx991cnx-android.yml .github/workflows/fx991cnx-publish.yml
           cd delivery
           sha256sum fx991cnx-arm64-release.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
@@ -95,4 +113,5 @@ jobs:
             fx991cnx-android/delivery/
             fx991cnx-android/app/build/reports/androidTests/
             fx991cnx-android/native-test.txt
+            fx991cnx-android/firmware-android-test.txt
           retention-days: 90

@@ -25,3 +25,8 @@
 ## 原创测试固件
 
 `tests/native_test.cpp` 与 `app/src/androidTest/.../EmulatorTest.java` 内的合成 nX-U8 机器码是本项目原创，按 GPL-3.0 提供。它们不含原机算法、字库或数据，也不用于冒充数学功能验收。
+
+
+## 0.2 固件兼容性样本
+
+使用 CasioEmuNeo v0.5.0 完整发行包中的 fx991cnx ROM 做临时兼容性测试。其公开可下载不被解释为取得 Casio 再分发授权，GPL-3.0 不自动覆盖该 ROM；不随源码、APK、测试 APK、Artifact 或 Release 提供。源码中仅记录长度、SHA-256、操作序列和显示区域摘要，测试截图为实际执行结果。

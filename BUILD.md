@@ -47,7 +47,7 @@ sdkmanager 'emulator' 'system-images;android-30;google_apis;x86_64'
 adb shell settings put global airplane_mode_on 1
 adb shell svc wifi disable
 adb shell svc data disable
-./gradlew :app:connectedDebugAndroidTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
+./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=org.fx991cnx.emulator.EmulatorTest -Pandroid.injected.androidTest.leaveApksInstalledAfterRun=true
 adb pull /sdcard/Pictures/fx991-screens/ screenshots/
 ```
 
@@ -56,3 +56,19 @@ adb pull /sdcard/Pictures/fx991-screens/ screenshots/
 ## GitHub Actions
 
 根目录 `.github/workflows/fx991cnx-android.yml` 自动安装 SDK/NDK、构建两个 ABI、运行 Linux 原生测试和离线 Android Emulator 测试，上传 APK、SHA-256、匹配源码和测试报告。可在分支提交触发或手动运行。临时预览签名不能保证跨 CI 构建直接升级。
+
+
+## 原机固件兼容性测试（0.2）
+
+`FirmwareAcceptanceTest` 为可选的真实固件测试类，ROM 不在源码或测试 APK 中。CI 仅在临时目录下载用户指定上游发行包，按固定 SHA-256 校验，然后通过 adb 将 ROM 写入测试设备的应用内部目录；测试结束后随临时设备销毁。APK、源码 ZIP、Artifact 和 Release 均不包含此 ROM。
+
+测试只使用屏幕和物理按键路径，断言真实 VRAM 图案与人工核对过的 1/5、0.2、9+√2、矩阵及多项式答案一致，另检查中文 SETUP、ALPHA、DEL 和原机结果/变量恢复。屏幕指纹来自固定测试 ROM，其他固件版本需要另外验收。
+
+Linux 原机探测工具可独立编译：
+
+```sh
+c++ -std=c++17 -O2 -Iapp/src/main/cpp/core tests/rom_probe.cpp app/src/main/cpp/core/Chipset/*.cpp app/src/main/cpp/core/Peripheral/*.cpp -o build/rom-probe
+build/rom-probe /path/to/your/rom.bin /path/to/input.script
+```
+
+脚本支持 `tick 4000000`、`tap 0x60` 和 `dump /path/to/frame.lcd`，输出为 2048 字节 VRAM 加模式、对比度各一字节。该工具不包含或生成固件。
