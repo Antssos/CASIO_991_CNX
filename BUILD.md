@@ -2,7 +2,7 @@
 
 ## 固定工具版本
 
-- JDK 17（本地也验证 JDK 21）
+- 完整 JDK 17（包含 javac 和 jlink，只有 JRE 不能构建）
 - Gradle 8.9（项目 Wrapper）、Android Gradle Plugin 8.7.3
 - Android compile/target SDK 35、min SDK 29，Build Tools 35.0.0
 - NDK 27.2.12479018、CMake 3.22.1、C++17

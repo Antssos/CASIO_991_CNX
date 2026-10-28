@@ -15,7 +15,8 @@ final class CalculatorView extends View {
  private float scale=1,ox,oy;
  private int active=-1,pointer=-1;
  private final Handler handler=new Handler(Looper.getMainLooper());
- private final Runnable showTools=()->{cancelTouch();activity.tools();};
+ private final Runnable showTools=this::showToolsNow;
+ private void showToolsNow(){cancelTouch();activity.tools();}
  static final int[] CODES={0x02,0x12,0x22,0x32,0x42,0x01,0x11,0x21,0x31,0x41,0x00,0x10,0x20,0x30,0x40,0x64,0x63,0x62,0x61,0x60,0x05,0x15,0x25,0x35,0x45,0x55,0x04,0x14,0x24,0x34,0x44,0x54,0x03,0x13,0x23,0x33,0x43,0x53,0x06,0x16,0x46,0x56,0x07,0x17,0x47,0xFF,0x26,0x37,0x27,0x36};
  static final String[] MAIN={"7","8","9","DEL","AC","4","5","6","×","÷","1","2","3","+","−","0",".","×10ˣ","Ans","=","▯/▯","√","x²","x▯","log","ln","(−)","° ′ ″","x⁻¹","sin","cos","tan","STO","ENG","(",")","S⇔D","M+","OPTN","CALC","∫","x","SHIFT","ALPHA","MENU","ON","◀","▶","▲","▼"};
  static final String[] SHIFT={"CONST","CONV","RESET","INS","OFF","","","","","","","","","","","Rnd","Ran#","π","PreAns","","a b/c","³√","x³","ⁿ√","10ˣ","eˣ","Abs","FACT","x!","sin⁻¹","cos⁻¹","tan⁻¹","RCL","←","%",",","a b/c","M−","QR","SOLVE","d/dx","Σ","","","SETUP","","","","",""};

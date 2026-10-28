@@ -33,6 +33,8 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
   android.graphics.RectF r=CalculatorView.RECTS[index];float x=ox+r.centerX()*s,y=oy+r.centerY()*s;
   getInstrumentation().runOnMainSync(()->{MotionEvent e=MotionEvent.obtain(SystemClock.uptimeMillis(),SystemClock.uptimeMillis(),down?MotionEvent.ACTION_DOWN:MotionEvent.ACTION_UP,x,y,0);v.dispatchTouchEvent(e);e.recycle();});
  }
+ @Override protected void setUp()throws Exception{super.setUp();File[] files=getInstrumentation().getTargetContext().getFilesDir().listFiles();if(files!=null)for(File f:files)if(f.getName().equals("rom.bin")||f.getName().startsWith("state-v1-"))f.delete();}
+ private void clickText(String text)throws Exception{android.view.accessibility.AccessibilityNodeInfo root=getInstrumentation().getUiAutomation().getRootInActiveWindow();assertNotNull(root);java.util.List<android.view.accessibility.AccessibilityNodeInfo> nodes=root.findAccessibilityNodeInfosByText(text);assertFalse("Missing UI text: "+text,nodes.isEmpty());assertTrue(nodes.get(0).performAction(android.view.accessibility.AccessibilityNodeInfo.ACTION_CLICK));}
  public void testOfflineNativeAndTouch()throws Exception{
   MainActivity a=getActivity();SystemClock.sleep(500);shot("01-no-rom-portrait");
   // Fixture is written only by the separately installed test APK.
@@ -41,8 +43,13 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
   byte[] state=NativeCore.save();assertTrue(state.length>10000);
   for(int code:CalculatorView.CODES){NativeCore.key(code,true);NativeCore.frame(100);NativeCore.key(code,false);}
   assertTrue(NativeCore.restore(state));assertFalse(NativeCore.restore(new byte[3]));assertEquals("",NativeCore.error());
-  // Activate the same fixture through normal app startup, then drive rendered keys.
-  File appRom=new File(a.getFilesDir(),"rom.bin");try(FileOutputStream out=new FileOutputStream(appRom)){out.write(firmware);}
+  // Exercise the real SAF picker and its import-result handler, including model confirmation.
+  getInstrumentation().runOnMainSync(a::importRom);SystemClock.sleep(600);shot("01b-system-file-picker");
+  getInstrumentation().getUiAutomation().executeShellCommand("input keyevent 4").close();SystemClock.sleep(300);
+  getInstrumentation().runOnMainSync(()->a.onActivityResult(1,android.app.Activity.RESULT_OK,new Intent().setData(android.net.Uri.fromFile(file))));
+  SystemClock.sleep(500);shot("01c-rom-model-confirmation");clickText("确认并导入");SystemClock.sleep(700);assertTrue(view(a).ready);
+  // Restart through normal app startup, then drive rendered keys.
+
   getInstrumentation().runOnMainSync(a::finish);SystemClock.sleep(400);
   Intent intent=new Intent(getInstrumentation().getTargetContext(),MainActivity.class);intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
   MainActivity live=(MainActivity)getInstrumentation().startActivitySync(intent);SystemClock.sleep(700);CalculatorView v=view(live);assertTrue(v.ready);shot("02-synthetic-rom-portrait");

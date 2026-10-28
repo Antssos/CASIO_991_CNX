@@ -29,3 +29,7 @@ android {
   outputFileName="fx991cnx-${output.getFilter(com.android.build.OutputFile.ABI)=='arm64-v8a'?'arm64':'x86_64'}-${variant.buildType.name}.apk"
  } }
 }
+
+dependencies {
+ androidTestCompileOnly files("${android.sdkDirectory}/platforms/android-35/optional/android.test.runner.jar", "${android.sdkDirectory}/platforms/android-35/optional/android.test.base.jar", "${android.sdkDirectory}/platforms/android-35/optional/android.test.mock.jar")
+}
