@@ -57,6 +57,13 @@ jobs:
             adb shell am start -W -n org.fx991cnx.emulator/.MainActivity
             sleep 2
             adb exec-out screencap -p > screenshots/06-process-restart.png
+            adb shell settings put system accelerometer_rotation 0
+            adb shell settings put system user_rotation 1
+            adb shell am force-stop org.fx991cnx.emulator
+            adb shell am start -W -n org.fx991cnx.emulator/.MainActivity
+            sleep 3
+            adb exec-out screencap -p > screenshots/09-landscape-stable.png
+            adb shell settings put system user_rotation 0
             adb shell wm size 1600x2560
             adb shell wm density 240
             adb shell am force-stop org.fx991cnx.emulator

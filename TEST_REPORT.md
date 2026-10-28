@@ -11,7 +11,23 @@
 - CPU、RAM、LCD、键盘、中断、计时器等全状态保存、修改、还原后字节一致；冷实例载入后 RAM 一致。状态有效载荷 10703 字节。
 - 以上测试通过，未发现 sanitizer 错误。最初沙箱内 LeakSanitizer 被 ptrace 限制，正常执行环境重跑通过。
 
-Android 编译、自动运行、截图证据在实际执行后更新。CI 报告附在同批 Artifact。
+## Android 实际运行证据
+
+[GitHub Actions 40662774487](https://github.com/Antssos/cloudcodex/actions/runs/40662774487) 全部成功。测试提交 `e8f3652b4b545ff537552b3dff55eacdb9dbe5ef`；后续文档提交没有修改生产应用代码。
+
+- Android Emulator API 30（Android 11）、x86_64、Pixel 2，KVM 加速；断开 Wi-Fi/数据并设飞行模式后测试。
+- 一个集成测试方法覆盖多组断言，**1 test、0 failures、0 skipped**。生成真实设备截图，没有使用静态示意图代替运行截图。
+- 系统文件选择器打开/返回、导入结果处理、长度/向量检查及候选机型确认通过。测试自动调用选择器结果回调传入本地合成文件 URI；未自动点击选择器中的真实用户 ROM 文件。
+- 原创测试 ROM 由真实 MCU 绘制 `TEST ROM`，启动、50 键视觉中心热区及触摸序列通过。按住数字 1 后 MCU 的扫描结果确实写入 LCD VRAM 为 `0xFE`，松手为 `0xFF`；验证的是硬件输入链路，不是 Casio 数学语义。
+- 后台后返回并再次触摸扫描通过；结束 Activity 并重新打开可恢复运行。另用 `am force-stop` / `am start -W` 启动成功并保存截图。原生测试同时验证全状态跨冷实例还原。
+- 竖屏与 1600×2560 / 240 dpi 平板截图已核对，整台面板可见，无系统栏遮挡。首轮横屏截图捕获了旋转过渡帧，已补充布局稳定断言与独立 ADB 截图，最终横屏证据以发布包中的 `09-landscape-stable.png` 为准。
+- 卸载测试应用后，**实际安装 x86_64 release APK** 成功，启动返回 `Status: ok`，显示明确的无 ROM 导入引导。
+- arm64 release 已真实构建，未在 arm64 实机或 arm64 Android Emulator 执行；不能把 x86_64 测试说成 arm64 实机验收。Android 10 / API 29 也没有独立运行测试。
+- `apksigner verify` 通过，APK Signature Scheme v2 有效；`zipalign -c -P 16 4` 通过。`aapt dump permissions` 没有任何权限声明。检查 APK assets 只有 LICENSE，没有 ROM。
+
+实际截图：[release 安装启动](docs/evidence/release-installed.png)、[原创测试固件](docs/evidence/synthetic-rom.png)、[平板](docs/evidence/tablet.png)。Artifact 中另有文件选择器、型号确认、按住数字键、状态重开和进程重启截图。
+
+本地没有 KVM，软件虚拟化未能稳定启动 Android，因此 Android 运行验收来自上述 CI，而不是本地黑屏实例。前期 CI 暴露的导入界面同步、固定按键等待和返回已有 Activity 的等待问题已修复；最终整套测试重新执行成功。
 
 ## 原机计算验收矩阵
 

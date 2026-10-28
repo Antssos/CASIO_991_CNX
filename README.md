@@ -6,7 +6,7 @@ Android 10+ 离线原机模拟器的 **0.1.0 预览版**。采用 CasioEmuNeo �
 
 ## 下载与安装
 
-在本仓库 [fx991cnx Android APK 工作流](https://github.com/Antssos/cloudcodex/actions/workflows/fx991cnx-android.yml) 的成功运行中下载 `fx991cnx-arm64-release` Artifact，解压后安装 `fx991cnx-arm64-release.apk`。无需 Android Studio。若有 GitHub Release，可直接下载 APK；Artifact 下载需要登录 GitHub。
+优先从 [GitHub Release](https://github.com/Antssos/cloudcodex/releases/tag/fx991cnx-v0.1.0-preview) 下载 APK。仓库为私有，需有权限的 GitHub 账户。也可在本仓库 [fx991cnx Android APK 工作流](https://github.com/Antssos/cloudcodex/actions/workflows/fx991cnx-android.yml) 的成功运行中下载 `fx991cnx-arm64-release` Artifact，解压后安装 `fx991cnx-arm64-release.apk`。无需 Android Studio。Release 和 Artifact 下载均需要登录有权限的 GitHub 账户。
 
 1. 手机需 Android 10 或以上、arm64 CPU。允许文件管理器“安装未知应用”。
 2. 对照同批 `SHA256SUMS.txt` 校验 APK，点击安装。

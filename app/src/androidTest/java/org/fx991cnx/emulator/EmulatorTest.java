@@ -64,8 +64,8 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
   }
   // Verify a visible key press travels through Android touch, queue, KO/KI and MCU to VRAM.
   assertTrue(v.ready);touch(live,v,10,true);awaitPixel(v,254);shot("03-touch-key-1");touch(live,v,10,false);awaitPixel(v,255);
-  live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);SystemClock.sleep(700);shot("04-synthetic-rom-landscape");
-  live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);SystemClock.sleep(500);
+  getInstrumentation().runOnMainSync(()->live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE));long rotateEnd=SystemClock.uptimeMillis()+10000;while(v.getWidth()<v.getHeight()&&SystemClock.uptimeMillis()<rotateEnd)SystemClock.sleep(100);assertTrue("Landscape layout never resized",v.getWidth()>v.getHeight());SystemClock.sleep(1200);shot("04-synthetic-rom-landscape");
+  getInstrumentation().runOnMainSync(()->live.setRequestedOrientation(android.content.pm.ActivityInfo.SCREEN_ORIENTATION_PORTRAIT));long portraitEnd=SystemClock.uptimeMillis()+10000;while(v.getWidth()>v.getHeight()&&SystemClock.uptimeMillis()<portraitEnd)SystemClock.sleep(100);assertTrue(v.getHeight()>v.getWidth());SystemClock.sleep(500);
   // Background / resume. Core and persisted app state must remain available offline.
   shell("input keyevent 3");SystemClock.sleep(400);getInstrumentation().getTargetContext().startActivity(new Intent(getInstrumentation().getTargetContext(),MainActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_REORDER_TO_FRONT));SystemClock.sleep(500);assertTrue(v.ready);touch(live,v,10,true);awaitPixel(v,254);touch(live,v,10,false);awaitPixel(v,255);
   getInstrumentation().runOnMainSync(live::finish);SystemClock.sleep(500);MainActivity reopened=(MainActivity)getInstrumentation().startActivitySync(intent);SystemClock.sleep(700);assertTrue(view(reopened).ready);shot("05-restored-state");
