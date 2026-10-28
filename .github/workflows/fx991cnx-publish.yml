@@ -43,15 +43,13 @@ jobs:
           commit=$(gh api "repos/$GH_REPO/actions/runs/$build_run" --jq .head_sha)
           echo "run=$build_run" >> "$GITHUB_OUTPUT"
           echo "commit=$commit" >> "$GITHUB_OUTPUT"
-      - name: Download verified artifact through the REST archive endpoint
-        env:
-          BUILD_RUN: ${{ steps.verified.outputs.run }}
-        run: |
-          artifact_id=$(gh api "repos/$GH_REPO/actions/runs/$BUILD_RUN/artifacts" --jq '.artifacts[] | select(.name == "fx991cnx-arm64-release" and .expired == false) | .id')
-          [[ "$artifact_id" =~ ^[0-9]+$ ]]
-          mkdir -p verified-artifact
-          gh api "repos/$GH_REPO/actions/artifacts/$artifact_id/zip" > /tmp/fx-verified-artifact.zip
-          unzip -q /tmp/fx-verified-artifact.zip -d verified-artifact
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.verified.outputs.run }}
+          name: fx991cnx-arm64-release
+          path: verified-artifact
       - name: Verify delivery and package static theme previews
         env:
           BUILD_RUN: ${{ steps.verified.outputs.run }}
