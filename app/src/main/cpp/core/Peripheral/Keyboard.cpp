@@ -13,7 +13,7 @@ namespace casioemu
 {
 	void Keyboard::Initialise()
 	{
-	    
+
 	    require_frame = true;
 
 		/*
@@ -97,9 +97,9 @@ int offset = emulator.hardware_id == HW_ES_PLUS ? 0 : emulator.hardware_id == HW
 			interrupt_source.TryRaise();
 	}
 
-	
 
-	
+
+
 
 	void Keyboard::PressButton(Button& button, bool stick)
 	{

@@ -10,8 +10,8 @@
 #include <vector>
 
 /**
- * We need to setup break-point system in CPU 
- * 
+ * We need to setup break-point system in CPU
+ *
  */
 
 
@@ -150,7 +150,7 @@ namespace casioemu
 		};
 		std::vector<StackFrame> stack;
 
-		
+
 
 		uint16_t Fetch();
 
@@ -279,4 +279,3 @@ namespace casioemu
 		void OP_DSR();
 	};
 }
-

@@ -21,4 +21,3 @@ namespace casioemu
 		bool Success();
 	};
 }
-

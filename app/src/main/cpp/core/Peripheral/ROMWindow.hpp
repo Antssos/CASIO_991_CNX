@@ -22,4 +22,3 @@ namespace casioemu
 		void UIEvent(SDL_Event &event);
 	};
 }
-

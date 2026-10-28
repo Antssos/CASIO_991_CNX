@@ -11,4 +11,3 @@ namespace casioemu
 		void Info(const char *format, ...);
 	}
 }
-

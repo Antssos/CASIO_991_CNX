@@ -58,4 +58,3 @@ namespace casioemu
 		void RecalculateGhost();
 	};
 }
-

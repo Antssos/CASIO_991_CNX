@@ -31,4 +31,3 @@ namespace casioemu
 		void DivideTicks();
 	};
 }
-

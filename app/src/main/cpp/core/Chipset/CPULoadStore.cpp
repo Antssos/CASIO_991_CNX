@@ -65,4 +65,3 @@ namespace casioemu
 			BumpEA(length); // * defined in CPUControl.cpp
 	}
 }
-

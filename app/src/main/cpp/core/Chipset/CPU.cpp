@@ -377,7 +377,7 @@ namespace casioemu
 			 */
 			impl_flags_out = PSW_Z;
 			(this->*(handler->handler_function))();
-			
+
 			reg_psw &= ~impl_flags_changed;
 			reg_psw |= impl_flags_out & impl_flags_changed;
 
@@ -387,7 +387,7 @@ namespace casioemu
 
 			if (!(handler->hint & H_DS))
 				break;
-			
+
 		}
 	}
 

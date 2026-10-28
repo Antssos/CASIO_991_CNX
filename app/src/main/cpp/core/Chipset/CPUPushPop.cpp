@@ -88,11 +88,11 @@ namespace casioemu
 			reg_pc = Pop16();
 			if (memory_model == MM_LARGE)
 				reg_csr = Pop16() & 0x000F;
-			
+
 			if (!stack.empty() && stack.back().lr_pushed &&
 					stack.back().lr_push_address == oldsp)
 				stack.pop_back();
-			
+
 		}
 	}
 
@@ -110,4 +110,3 @@ namespace casioemu
 		return result;
 	}
 }
-

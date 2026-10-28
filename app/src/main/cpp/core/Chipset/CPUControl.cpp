@@ -176,7 +176,7 @@ namespace casioemu
 		}
 		else
 			reg_pc = impl_operands[1].value;
-		
+
 	}
 
 	void CPU::OP_BL()
@@ -211,4 +211,3 @@ namespace casioemu
 		reg_psw = reg_epsw[reg_psw & PSW_ELEVEL];
 	}
 }
-

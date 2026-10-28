@@ -23,7 +23,7 @@ public class MainActivity extends Activity {
  private long heldAt;
  private final java.util.ArrayDeque<int[]> keys=new java.util.ArrayDeque<>();
  private long frames=0;
- @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);panel=new CalculatorView(this);setContentView(panel);if(rom().isFile())worker.execute(this::open);worker.scheduleWithFixedDelay(this::tick,0,16,TimeUnit.MILLISECONDS);}
+ @Override public void onCreate(Bundle b){super.onCreate(b);if(Build.VERSION.SDK_INT>=30)getWindow().setDecorFitsSystemWindows(false);getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);panel=new CalculatorView(this);setContentView(panel);if(rom().isFile())worker.execute(this::open);worker.scheduleWithFixedDelay(this::tick,0,16,TimeUnit.MILLISECONDS);}
  private File rom(){return new File(getFilesDir(),"rom.bin");}
  private void tick(){if(!ready||!running)return;try{
   long now=SystemClock.uptimeMillis();
@@ -60,7 +60,8 @@ public class MainActivity extends Activity {
  });}
  private void install(byte[] bytes){release();save();ready=false;try{AtomicFile f=new AtomicFile(rom());FileOutputStream out=f.startWrite();try{out.write(bytes);f.finishWrite(out);}catch(Exception e){f.failWrite(out);throw e;}open();}catch(Exception e){fail(e.getMessage());}}
  void tools(){new AlertDialog.Builder(this).setTitle("fx-991CN X Emulator").setItems(new String[]{"导入／更换合法 ROM","重新开机（清除当前状态）","许可与版本"},(d,w)->{if(w==0)importRom();else if(w==1)new AlertDialog.Builder(this).setMessage("清除计算器状态？导入的 ROM 会保留。").setPositiveButton("清除",(a,b)->worker.execute(()->{release();ready=false;new AtomicFile(stateFile()).delete();open();})).setNegativeButton("取消",null).show();else new AlertDialog.Builder(this).setTitle("0.1.0-preview · 固件验收待完成").setMessage("独立开源项目，非 Casio 官方应用。\n模拟核心：CasioEmuNeo（GPL-3.0），Android 移植及面板有修改。\n不内置、不下载专有 ROM；所有计算由导入固件执行。\n源码及许可证：github.com/Antssos/cloudcodex，feat/fx991cnx-android 分支。\n完整 GPL 见随 APK 发布的源代码及 LICENSE。").setPositiveButton("GPL-3.0 全文",(a,b)->license()).setNegativeButton("关闭",null).show();}).show();}
- private void license(){try(InputStream in=getAssets().open("LICENSE")){new AlertDialog.Builder(this).setTitle("GNU GPL v3").setMessage(new String(in.readAllBytes(),java.nio.charset.StandardCharsets.UTF_8)).setPositiveButton("关闭",null).show();}catch(IOException ignored){}}
+ private void license(){try(InputStream in=getAssets().open("LICENSE")){new AlertDialog.Builder(this).setTitle("GNU GPL v3").setMessage(new String(readAll(in),java.nio.charset.StandardCharsets.UTF_8)).setPositiveButton("关闭",null).show();}catch(IOException ignored){}}
+ private static byte[] readAll(InputStream in)throws IOException{ByteArrayOutputStream out=new ByteArrayOutputStream();byte[] b=new byte[8192];int n;while((n=in.read(b))!=-1)out.write(b,0,n);return out.toByteArray();}
  static String hex(byte[] data){StringBuilder s=new StringBuilder();for(byte b:data)s.append(String.format(java.util.Locale.ROOT,"%02x",b));return s.toString();}
  @Override protected void onResume(){super.onResume();running=true;}
  @Override protected void onPause(){running=false;panel.cancelTouch();worker.execute(()->{release();save();});super.onPause();}

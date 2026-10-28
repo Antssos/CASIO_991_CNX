@@ -29,7 +29,7 @@ public class EmulatorTest extends ActivityInstrumentationTestCase2<MainActivity>
  }
  private CalculatorView view(MainActivity a){return (CalculatorView)((android.view.ViewGroup)a.findViewById(android.R.id.content)).getChildAt(0);}
  private void touch(MainActivity a,CalculatorView v,int index,boolean down){
-  float s=Math.min(v.getWidth()/344f,v.getHeight()/720f),ox=(v.getWidth()-344*s)/2,oy=(v.getHeight()-720*s)/2;
+  float width=v.getWidth()-v.getPaddingLeft()-v.getPaddingRight(),height=v.getHeight()-v.getPaddingTop()-v.getPaddingBottom();float s=Math.min(width/344f,height/720f),ox=v.getPaddingLeft()+(width-344*s)/2,oy=v.getPaddingTop()+(height-720*s)/2;
   android.graphics.RectF r=CalculatorView.RECTS[index];float x=ox+r.centerX()*s,y=oy+r.centerY()*s;
   getInstrumentation().runOnMainSync(()->{MotionEvent e=MotionEvent.obtain(SystemClock.uptimeMillis(),SystemClock.uptimeMillis(),down?MotionEvent.ACTION_DOWN:MotionEvent.ACTION_UP,x,y,0);v.dispatchTouchEvent(e);e.recycle();});
  }

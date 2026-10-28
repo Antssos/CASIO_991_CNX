@@ -9,4 +9,3 @@ namespace casioemu
 		HW_CLASSWIZ_II = 5
 	};
 }
-

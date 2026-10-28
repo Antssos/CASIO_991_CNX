@@ -29,4 +29,3 @@ namespace casioemu
 		void Initialise();
 	};
 }
-

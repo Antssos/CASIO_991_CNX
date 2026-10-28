@@ -100,4 +100,3 @@ namespace casioemu
 		friend class CPU;
 	};
 }
-

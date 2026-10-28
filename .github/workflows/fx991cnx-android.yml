@@ -20,6 +20,8 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+        with:
+          packages: platform-tools
       - name: Native core sanitizer tests
         run: tests/run-native.sh | tee native-test.txt
       - name: Install pinned SDK and NDK
@@ -27,7 +29,7 @@ jobs:
       - name: Signing key for this preview build
         run: |
           mkdir -p "$HOME/.android"
-          keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
+          test -f "$HOME/.android/debug.keystore" || keytool -genkeypair -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -dname 'CN=Android Debug,O=Android,C=US' -keyalg RSA -keysize 2048 -validity 10000
       - name: Build installable release and test APKs
         run: ./gradlew :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon --console=plain
       - name: Enable KVM
@@ -57,7 +59,7 @@ jobs:
           cp app/build/outputs/apk/release/fx991cnx-arm64-release.apk delivery/ || true
           cp README.md BUILD.md TEST_REPORT.md LICENSE THIRD_PARTY_NOTICES.md delivery/
           cp -r screenshots delivery/ || true
-          git archive --format=zip --output=delivery/fx991cnx-source.zip HEAD fx991cnx-android .github/workflows/fx991cnx-android.yml
+          git -C .. archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD fx991cnx-android .github/workflows/fx991cnx-android.yml
           cd delivery
           sha256sum fx991cnx-arm64-release.apk > SHA256SUMS.txt
       - uses: actions/upload-artifact@v4

@@ -35,4 +35,3 @@ namespace casioemu
 		virtual ~Peripheral();
 	};
 }
-

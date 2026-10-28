@@ -7,4 +7,3 @@ namespace casioemu
 {
 	Peripheral *CreateScreen(Emulator& emulator);
 }
-

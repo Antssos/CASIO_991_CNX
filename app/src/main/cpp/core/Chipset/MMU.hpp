@@ -39,4 +39,3 @@ namespace casioemu
 		void UnregisterRegion(MMURegion *region);
 	};
 }
-

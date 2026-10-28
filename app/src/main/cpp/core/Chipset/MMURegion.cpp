@@ -40,4 +40,3 @@ namespace casioemu
 		setup_done = false;
 	}
 }
-

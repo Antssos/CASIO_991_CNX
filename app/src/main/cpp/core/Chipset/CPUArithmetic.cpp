@@ -338,4 +338,3 @@ namespace casioemu
 		impl_operands[0].value = (uint8_t)(result >> 8);
 	}
 }
-

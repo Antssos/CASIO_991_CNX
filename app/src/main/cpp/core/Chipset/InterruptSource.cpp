@@ -55,4 +55,3 @@ namespace casioemu
 		return raise_success && emulator->chipset.GetInterruptPendingSFR(interrupt_index);
 	}
 }
-

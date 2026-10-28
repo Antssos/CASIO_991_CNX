@@ -13,7 +13,7 @@ namespace casioemu
 
 		real_hardware = emulator.GetModelInfo("real_hardware");
 		TimerSkipped = false;
-		
+
 		region_interval.Setup(0xF020, 2, "Timer/Interval", &data_interval, MMURegion::DefaultRead<uint16_t>, [](MMURegion *region, size_t offset, uint8_t data) {
 			uint16_t *value = (uint16_t *)(region->userdata);
 			*value &= ~(((uint16_t)0xFF) << ((offset - region->base) * 8));

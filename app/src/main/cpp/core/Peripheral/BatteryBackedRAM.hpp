@@ -17,7 +17,7 @@ namespace casioemu
 
 	public:
 		static char* rom_addr;
-	
+
 		using Peripheral::Peripheral;
  void State(StateIO& io) override {io.bytes(ram_buffer,ram_size);}
 		void Initialise();
@@ -26,4 +26,3 @@ namespace casioemu
 		void LoadRAMImage();
 	};
 }
-

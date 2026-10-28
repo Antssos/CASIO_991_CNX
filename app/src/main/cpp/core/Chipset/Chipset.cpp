@@ -148,7 +148,7 @@ namespace casioemu
 			return true;
 		return false;
 	}
-	
+
 	void Chipset::RaiseEmulator()
 	{
 		if (interrupts_active[INT_EMULATOR])
