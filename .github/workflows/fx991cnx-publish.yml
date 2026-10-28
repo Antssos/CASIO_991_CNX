@@ -1,0 +1,72 @@
+name: Publish verified fx991cnx preview
+on:
+  push:
+    branches: [feat/fx991cnx-android]
+    paths: ['.github/workflows/fx991cnx-publish.yml']
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful fx991cnx Android APK run ID
+        required: true
+        default: '40664197615'
+permissions:
+  contents: read
+jobs:
+  publish:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[publish-fx991cnx]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      VERIFIED_RUN_ID: ${{ github.event.inputs.run_id || '40664197615' }}
+      RELEASE_TAG: fx991cnx-v0.1.0-preview
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require successful build and Android runtime verification
+        id: verified
+        run: |
+          [[ "$VERIFIED_RUN_ID" =~ ^[0-9]+$ ]]
+          gh run watch "$VERIFIED_RUN_ID" --interval 30 --exit-status
+          test "$(gh api "repos/$GH_REPO/actions/runs/$VERIFIED_RUN_ID" --jq .conclusion)" = success
+          test "$(gh api "repos/$GH_REPO/actions/runs/$VERIFIED_RUN_ID" --jq .head_branch)" = feat/fx991cnx-android
+          commit=$(gh api "repos/$GH_REPO/actions/runs/$VERIFIED_RUN_ID" --jq .head_sha)
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ env.VERIFIED_RUN_ID }}
+          name: fx991cnx-arm64-release
+          path: verified-artifact
+      - name: Verify and package evidence
+        run: |
+          cd verified-artifact/delivery
+          sha256sum -c SHA256SUMS.txt
+          test -f screenshots/09-landscape-stable.png
+          zip -qr screenshots.zip screenshots
+          zip -qr android-test-results.zip ../app/build/reports/androidTests
+          printf '\n\n## 本次发布验证\n\n选取的 Actions 运行：https://github.com/%s/actions/runs/%s 。编译、原生 sanitizer、离线 Android instrumentation、稳定横屏布局断言、进程恢复、平板截图及 release 安装步骤均成功。\n\n横屏最终截图见 screenshots.zip 内 screenshots/09-landscape-stable.png；该图由 ADB 从布局稳定后的设备读取。原机 Casio 固件的数学功能仍未验收。\n' "$GH_REPO" "$VERIFIED_RUN_ID" >> TEST_REPORT.md
+      - name: Upload complete release and publish preview
+        env:
+          VERIFIED_COMMIT: ${{ steps.verified.outputs.commit }}
+        run: |
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --draft --prerelease --target "$VERIFIED_COMMIT" --title 'fx-991CN X Emulator 0.1.0 预览版（需合法 ROM）'
+          fi
+          gh release upload "$RELEASE_TAG" verified-artifact/delivery/fx991cnx-arm64-release.apk verified-artifact/delivery/fx991cnx-source.zip verified-artifact/delivery/README.md verified-artifact/delivery/BUILD.md verified-artifact/delivery/TEST_REPORT.md verified-artifact/delivery/THIRD_PARTY_NOTICES.md verified-artifact/delivery/LICENSE verified-artifact/delivery/SHA256SUMS.txt verified-artifact/delivery/screenshots.zip verified-artifact/delivery/android-test-results.zip --clobber
+          cat > /tmp/release-notes.md <<EOF_NOTES
+          Android 10+、arm64-v8a，下载安装 fx991cnx-arm64-release.apk；无需开发环境。首次导入您有权使用的 256 KiB fx-991CN X 原机 ROM，此后离线运行。没有广告、网络权限或浏览器依赖。
+
+          **这是需要继续原机验收的预览版。APK 不含 Casio 专有 ROM；未完成 1/5、中文菜单、矩阵及方程等原机功能验收，不能称为开箱即用的完整日常计算器。**
+
+          真实 nX-U8 C++/JNI 核心、按键扫描、LCD、状态保存已用原创诊断固件测试。Android Emulator 离线触摸、生命周期、稳定横屏、平板及 x86_64 release 安装通过。arm64 已编译，尚无 arm64 实机运行证据。
+
+          对应验证：https://github.com/$GH_REPO/actions/runs/$VERIFIED_RUN_ID
+
+          下载包包含完整 GPL-3.0 源码、许可、中文说明、构建步骤、测试报告、实际截图、Android 测试结果与 SHA-256。截图中的 TEST ROM 是原创诊断固件，未内置发布 APK。开发签名预览版跨构建可能需卸载重装。私有仓库下载需有权限的 GitHub 账户。
+          EOF_NOTES
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease --target "$VERIFIED_COMMIT" --notes-file /tmp/release-notes.md
