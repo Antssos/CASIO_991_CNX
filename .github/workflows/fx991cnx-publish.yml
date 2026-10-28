@@ -116,4 +116,4 @@ jobs:
           if test -n '${{ github.event.inputs.original_apk_blob }}'; then
             printf '\n本次为仓库迁移，Release APK 与原仓库 0.6 文件完全相同，保留原签名和 SHA-256，无需因迁仓卸载重装。新仓库的 CI 已独立完成构建验证。\n' >> /tmp/fx-release-notes.md
           fi
-          gh release edit "$RELEASE_TAG" --draft=false --prerelease --target "$VERIFIED_COMMIT" --notes-file /tmp/fx-release-notes.md
+          gh release edit "$RELEASE_TAG" --draft=false --prerelease --notes-file /tmp/fx-release-notes.md
