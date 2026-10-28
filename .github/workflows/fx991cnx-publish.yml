@@ -48,7 +48,7 @@ jobs:
           sha256sum -c SHA256SUMS.txt
           test -f screenshots/09-landscape-stable.png
           zip -qr screenshots.zip screenshots
-          zip -qr android-test-results.zip ../app/build/reports/androidTests
+          (cd .. && zip -qr delivery/android-test-results.zip app/build/reports/androidTests)
           printf '\n\n## 本次发布验证\n\n选取的 Actions 运行：https://github.com/%s/actions/runs/%s 。编译、原生 sanitizer、离线 Android instrumentation、稳定横屏布局断言、进程恢复、平板截图及 release 安装步骤均成功。\n\n横屏最终截图见 screenshots.zip 内 screenshots/09-landscape-stable.png；该图由 ADB 从布局稳定后的设备读取。原机 Casio 固件的数学功能仍未验收。\n' "$GH_REPO" "$VERIFIED_RUN_ID" >> TEST_REPORT.md
       - name: Upload complete release and publish preview
         env:
