@@ -1,10 +1,10 @@
 # 卡西欧计算器
 
-Android 10+ 的 fx-991CN X 模拟器，支持离线计算、状态保存和四种配色。
+免费 Android 10+ 的 fx-991CN X 模拟器，支持离线计算、状态保存和四种配色。
 
-[下载 APK](https://github.com/Antssos/CASIO_991_CNX/releases/download/fx991cnx-v0.6.0-preview/fx991cnx-arm64-release.apk)
+[下载 APK](https://github.com/Antssos/CASIO_991_CNX/releases/download/fx991cnx-v0.7.0-preview/fx991cnx-arm64-release.apk)
 
-首次打开，点击屏幕导入 fx-991CN X 的 256 KiB ROM。
+内置固件，安装后即可离线使用。
 
 按 **SHIFT → MENU**，翻到设置末页：
 

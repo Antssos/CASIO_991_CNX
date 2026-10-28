@@ -16,7 +16,7 @@ export FX_KEYSTORE=/path/to/release.keystore
 
 签名参数：`FX_KEYSTORE`、`FX_STORE_PASSWORD`、`FX_KEY_ALIAS`、`FX_KEY_PASSWORD`，后三项默认分别为 `android`、`androiddebugkey`、`android`。
 
-可选内置固件：同时传入 `-PlicensedRomFile=/path/to/firmware.rom` 和 `-PromLicenseFile=/path/to/license.txt`。
+内置固件构建：同时传入 `-PlicensedRomFile=/path/to/firmware.rom` 和 `-PromLicenseFile=/path/to/grant.pdf`。授权文件仅在构建时读取，源码包和 APK 均不包含该文件。
 
 ## 测试与素材
 
@@ -31,4 +31,4 @@ python tools/generate_lcd_font.py /path/to/fusion-pixel-12px-monospaced-zh_hans.
 
 ## CI 与发布
 
-`main` 提交和 PR 自动构建 APK，检查签名与对齐，并上传 APK、源码和校验值。发布前更新 `app/build.gradle` 的版本号，再手动运行 `Publish APK`，填写成功的构建任务 ID。
+`main` 提交和 PR 验证源码构建，上传 APK、源码和校验值。内置固件版在本地签名构建；发布前更新版本号，运行 `Publish APK`，填写成功的构建任务 ID、已签名 APK 的 Git blob SHA 和文件 SHA-256。发布任务校验版本、固件和签名后上传内置版 Artifact 与 Release。

@@ -5,6 +5,12 @@ on:
       run_id:
         description: Successful main build run ID
         required: true
+      apk_blob:
+        description: Locally signed offline APK Git blob SHA
+        required: true
+      apk_sha256:
+        description: Signed APK SHA-256
+        required: true
 permissions:
   contents: read
 jobs:
@@ -19,7 +25,7 @@ jobs:
       GH_REPO: ${{ github.repository }}
       BUILD_RUN: ${{ inputs.run_id }}
     steps:
-      - name: Verify build
+      - name: Verify source build
         id: build
         run: |
           [[ "$BUILD_RUN" =~ ^[0-9]+$ ]]
@@ -30,27 +36,55 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ steps.build.outputs.commit }}
-      - uses: actions/download-artifact@v4
+      - uses: android-actions/setup-android@v3
         with:
-          github-token: ${{ github.token }}
-          repository: ${{ github.repository }}
-          run-id: ${{ inputs.run_id }}
-          name: fx991cnx-arm64-release
-          path: delivery
+          packages: platform-tools
+      - name: Prepare signed APK and source
+        env:
+          APK_BLOB: ${{ inputs.apk_blob }}
+          APK_SHA256: ${{ inputs.apk_sha256 }}
+        run: |
+          [[ "$APK_BLOB" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$APK_SHA256" =~ ^[0-9a-f]{64}$ ]]
+          mkdir -p delivery
+          gh api "repos/$GH_REPO/git/blobs/$APK_BLOB" --jq .content | base64 --decode > delivery/fx991cnx-arm64-release.apk
+          printf '%s  fx991cnx-arm64-release.apk\n' "$APK_SHA256" > delivery/SHA256SUMS.txt
+          (cd delivery && sha256sum -c SHA256SUMS.txt)
+          cp README.md BUILD.md LICENSE THIRD_PARTY_NOTICES.md delivery/
+          git archive --format=zip --output="$PWD/delivery/fx991cnx-source.zip" HEAD
+          sdkmanager 'build-tools;35.0.0'
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify delivery/fx991cnx-arm64-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/zipalign" -c -P 16 4 delivery/fx991cnx-arm64-release.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging delivery/fx991cnx-arm64-release.apk > /tmp/fx-badging.txt
+          python - <<'PY_VERIFY'
+          import hashlib,re
+          from pathlib import Path
+          from zipfile import ZipFile
+          version=re.search(r"versionName '([^']+)'",Path('app/build.gradle').read_text()).group(1)
+          assert "versionName='"+version+"'" in Path('/tmp/fx-badging.txt').read_text()
+          with ZipFile('delivery/fx991cnx-arm64-release.apk') as archive:
+              rom=archive.read('assets/firmware/fx991cnx.rom')
+              assert len(rom)==262144
+              assert hashlib.sha256(rom).hexdigest()=='8b6b6430f96858a8b3e765796e2d6f340bc7073ac9b0aa464775f15e53a10788'
+              assert not any(n.lower().endswith('.pdf') or 'REDISTRIBUTION-LICENSE' in n for n in archive.namelist())
+          PY_VERIFY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fx991cnx-offline-release
+          path: delivery/
+          retention-days: 90
       - name: Publish release
         env:
           BUILD_COMMIT: ${{ steps.build.outputs.commit }}
         run: |
-          cd delivery
-          sha256sum -c SHA256SUMS.txt
-          version=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" ../app/build.gradle)
+          version=$(sed -n "s/.*versionName '\([^']*\)'.*/\1/p" app/build.gradle)
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.-]+)?$ ]]
           tag="fx991cnx-v$version"
           if gh release view "$tag" >/dev/null 2>&1; then
             echo 'Release already exists; use a new app version.' >&2
             exit 1
           fi
-          printf 'Android 10+ · arm64-v8a\n\n安装 fx991cnx-arm64-release.apk，首次导入 fx-991CN X 的 256 KiB ROM。\n\n源码、构建说明和 SHA-256 随附件提供。\n' > /tmp/fx-release-notes.md
+          printf 'Android 10+ · arm64-v8a\n\n内置固件，安装后即可离线使用。支持四种主题、震动和按键音设置。\n\n附件提供 APK、源码和 SHA-256 校验值。\n' > /tmp/fx-release-notes.md
           options=()
           if [[ "$version" == *-* ]]; then options+=(--prerelease); fi
-          gh release create "$tag" fx991cnx-arm64-release.apk fx991cnx-source.zip README.md BUILD.md LICENSE THIRD_PARTY_NOTICES.md SHA256SUMS.txt --target "$BUILD_COMMIT" --title "卡西欧计算器 $version" --notes-file /tmp/fx-release-notes.md "${options[@]}"
+          gh release create "$tag" delivery/fx991cnx-arm64-release.apk delivery/fx991cnx-source.zip delivery/README.md delivery/BUILD.md delivery/LICENSE delivery/THIRD_PARTY_NOTICES.md delivery/SHA256SUMS.txt --target "$BUILD_COMMIT" --title "卡西欧计算器 $version" --notes-file /tmp/fx-release-notes.md "${options[@]}"

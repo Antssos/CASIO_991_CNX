@@ -8,8 +8,8 @@ android {
   applicationId 'org.fx991cnx.emulator'
   minSdk 29
   targetSdk 35
-  versionCode 6
-  versionName '0.6.0-preview'
+  versionCode 7
+  versionName '0.7.0-preview'
   externalNativeBuild { cmake { cppFlags '-std=c++17' } }
  }
  signingConfigs {
@@ -33,8 +33,7 @@ dependencies {
  implementation "com.caverock:androidsvg-aar:1.4"
 }
 
-// Optional licensed-ROM build. Public builds leave this generated directory empty.
-// Supply both files only after verifying redistribution rights for this firmware.
+// Private build inputs; only the firmware is packaged.
 def firmwareAssets = layout.buildDirectory.dir('generated/licensedFirmwareAssets')
 android.sourceSets.main.assets.srcDir(firmwareAssets)
 def firmwareFile = providers.gradleProperty('licensedRomFile')
@@ -54,8 +53,11 @@ tasks.register('prepareLicensedFirmware') {
    if (!rom.isFile() || rom.length() != 262144 || !grant.isFile() || grant.length() == 0) {
     throw new GradleException('A complete 256 KiB fx-991CN X ROM and redistribution grant are required')
    }
+   def digest = java.security.MessageDigest.getInstance('SHA-256').digest(rom.bytes).encodeHex().toString()
+   if (digest != '8b6b6430f96858a8b3e765796e2d6f340bc7073ac9b0aa464775f15e53a10788') {
+    throw new GradleException('Unexpected fx-991CN X firmware checksum')
+   }
    copy { from rom; into new File(folder, 'firmware'); rename { 'fx991cnx.rom' } }
-   copy { from grant; into new File(folder, 'firmware'); rename { 'REDISTRIBUTION-LICENSE.txt' } }
   }
  }
 }

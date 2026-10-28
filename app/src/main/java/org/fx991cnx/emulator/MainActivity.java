@@ -34,10 +34,9 @@ public class MainActivity extends Activity {
  @Override public void onCreate(Bundle b){super.onCreate(b);ui=new UiPreferences(this);settings=new LcdSettings(this);initFeedback();getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);getWindow().getAttributes().layoutInDisplayCutoutMode=WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;panel=new CalculatorView(this);setContentView(panel);fullscreen();worker.execute(()->{installBundledRom();if(rom().isFile())open();});worker.scheduleWithFixedDelay(this::tick,0,16,TimeUnit.MILLISECONDS);}
  private void installBundledRom(){
   if(rom().isFile())return;
-  // Only a separately supplied, licensed firmware asset can enable first-run provisioning.
+  // Keep an existing imported ROM and its saved state when updating.
   try(InputStream in=getAssets().open("firmware/fx991cnx.rom")){
-   byte[] bytes=readAll(in);if(bytes.length!=262144)throw new IOException("内置 ROM 长度不正确");
-   try(InputStream grant=getAssets().open("firmware/REDISTRIBUTION-LICENSE.txt")){if(readAll(grant).length==0)throw new IOException("缺少固件授权声明");}
+   byte[] bytes=readAll(in);if(!BundledFirmware.valid(bytes))throw new IOException("内置 ROM 校验失败");
    AtomicFile file=new AtomicFile(rom());FileOutputStream out=file.startWrite();try{out.write(bytes);file.finishWrite(out);}catch(IOException e){file.failWrite(out);throw e;}
   }catch(FileNotFoundException absent){}catch(IOException error){runOnUiThread(()->Toast.makeText(this,"内置固件安装失败，请手动导入："+error.getMessage(),Toast.LENGTH_LONG).show());}
  }
