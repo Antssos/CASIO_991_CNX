@@ -8,8 +8,8 @@ android {
   applicationId 'org.fx991cnx.emulator'
   minSdk 29
   targetSdk 35
-  versionCode 3
-  versionName '0.3.0-preview'
+  versionCode 4
+  versionName '0.4.0-preview'
   testInstrumentationRunner 'android.test.InstrumentationTestRunner'
   externalNativeBuild { cmake { cppFlags '-std=c++17' } }
  }
@@ -34,3 +34,31 @@ dependencies {
  implementation "com.caverock:androidsvg-aar:1.4"
  androidTestCompileOnly files("${android.sdkDirectory}/platforms/android-35/optional/android.test.runner.jar", "${android.sdkDirectory}/platforms/android-35/optional/android.test.base.jar", "${android.sdkDirectory}/platforms/android-35/optional/android.test.mock.jar")
 }
+
+// Optional licensed-ROM build. Public builds leave this generated directory empty.
+// Supply both files only after verifying redistribution rights for this firmware.
+def firmwareAssets = layout.buildDirectory.dir('generated/licensedFirmwareAssets')
+android.sourceSets.main.assets.srcDir(firmwareAssets)
+def firmwareFile = providers.gradleProperty('licensedRomFile')
+def firmwareGrant = providers.gradleProperty('romLicenseFile')
+tasks.register('prepareLicensedFirmware') {
+ outputs.dir(firmwareAssets)
+ outputs.upToDateWhen { false }
+ doLast {
+  def folder = firmwareAssets.get().asFile
+  delete(folder)
+  if (firmwareFile.isPresent() != firmwareGrant.isPresent()) {
+   throw new GradleException('licensedRomFile and romLicenseFile must both be provided')
+  }
+  if (firmwareFile.isPresent()) {
+   def rom = file(firmwareFile.get())
+   def grant = file(firmwareGrant.get())
+   if (!rom.isFile() || rom.length() != 262144 || !grant.isFile() || grant.length() == 0) {
+    throw new GradleException('A complete 256 KiB fx-991CN X ROM and redistribution grant are required')
+   }
+   copy { from rom; into new File(folder, 'firmware'); rename { 'fx991cnx.rom' } }
+   copy { from grant; into new File(folder, 'firmware'); rename { 'REDISTRIBUTION-LICENSE.txt' } }
+  }
+ }
+}
+tasks.named('preBuild').configure { dependsOn('prepareLicensedFirmware') }

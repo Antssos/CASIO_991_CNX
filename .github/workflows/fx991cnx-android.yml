@@ -42,6 +42,8 @@ jobs:
               with ZipFile(path) as archive:
                   names=archive.namelist()
                   assert all('assets/skins/'+theme+'.svg' in names for theme in ['blue','ivory','pink','black'])
+                  assert 'assets/lcd-font.json' in names
+                  assert all(b'<text' not in archive.read('assets/skins/'+theme+'.svg') for theme in ['blue','ivory','pink','black'])
                   assert not any(name.endswith(('.rom','.bin')) and name.startswith('assets/') for name in names)
                   print(path.name, 'four built-in faceplates, no bundled ROM')
           PY_PACKAGE

@@ -37,3 +37,7 @@
 - AndroidSVG 1.4，Paul LeBeau / BigBadaboom，Apache-2.0：https://github.com/BigBadaboom/androidsvg 。仅解析 APK 内置 SVG 并绘制到原生 Canvas，不访问网络。
 - 部分轮廓由 DejaVu Sans / DejaVu Sans Condensed / DejaVu Serif Italic 和 Noto Sans CJK SC 字形转换而来，字体原作者版权与许可分别保留在 `licenses/DejaVu-copyright-and-license.txt`、`licenses/Noto-CJK-copyright-and-OFL.txt`。只使用必要字符的图形轮廓，未打包完整字体；对应许可也存放在 APK 的 assets/licenses 中。
 - `key_click.wav` 是本项目用数学波形生成的短音效，GPL-3.0；没有外部录音或音频素材。
+
+## 0.4 LCD 扩展设置
+
+LCD 扩展设置字库由 OFL Noto Sans CJK SC 与 DejaVu Sans Mono 生成少量单色字形，沿用上述字体版权与许可证，不包含任何 Casio ROM 字库。原机计算显示仍直接读取 MCU 显存。扩展菜单属于本项目 GPL-3.0 界面代码，不修改专有 ROM。

@@ -15,18 +15,13 @@ final class CalculatorView extends View {
  static final String[] MAIN={"7","8","9","DEL","AC","4","5","6","×","÷","1","2","3","+","−","0",".","×10ˣ","Ans","=","分数","平方根","x²","xʸ","log","ln","负号","度分秒","x⁻¹","sin","cos","tan","STO","ENG","(",")","S⇔D","M+","OPTN","CALC","积分","x","SHIFT","ALPHA","菜单","ON","左","右","上","下"};
  static final RectF[] RECTS=SkinGeometry.KEYS;
  private final Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
- private final RectF settingsRect=new RectF();
- private final Handler handler=new Handler(Looper.getMainLooper());
- private final Runnable showSettings=this::openSettings;
  private Bitmap skin;
  private int renderedTheme=-1,renderedResolution=0,active=-1;
- private boolean settingsPressed=false,headerPressed=false,skinFailed=false;
- private float scale=1,ox,oy;
- CalculatorView(Context context){super(context);activity=(MainActivity)context;setLayerType(View.LAYER_TYPE_SOFTWARE,null);setFocusable(true);setContentDescription("fx-991CN X，右上角设置可更换主题、震动与按键音；长按机身顶部也可打开设置");}
- private float dp(float value){return value*getResources().getDisplayMetrics().density;}
- private void openSettings(){cancelTouch();activity.showSettings();}
+ private boolean skinFailed=false;
+ private float scaleX=1,scaleY=1,ox,oy;
+ CalculatorView(Context context){super(context);activity=(MainActivity)context;setLayerType(View.LAYER_TYPE_SOFTWARE,null);setFocusable(true);setContentDescription("fx-991CN X，SHIFT 后按菜单进入设置，主题、按键、关于");}
  void appearanceChanged(){renderedTheme=-1;invalidate();}
- @Override public WindowInsets onApplyWindowInsets(WindowInsets insets){if(Build.VERSION.SDK_INT>=30){Insets bars=insets.getInsets(WindowInsets.Type.systemBars()|WindowInsets.Type.displayCutout());setPadding(bars.left,bars.top,bars.right,bars.bottom);}return insets;}
+ @Override public WindowInsets onApplyWindowInsets(WindowInsets insets){setPadding(0,0,0,0);return insets;}
  private void skin(int theme,int resolution){
   if(skin!=null&&renderedTheme==theme&&renderedResolution==resolution)return;
   try{
@@ -38,15 +33,11 @@ final class CalculatorView extends View {
  }
  private void text(Canvas canvas,String value,float x,float y,float size,int color,boolean bold){paint.setShader(null);paint.setColor(color);paint.setTextSize(size);paint.setTypeface(Typeface.create("sans-serif",bold?Typeface.BOLD:Typeface.NORMAL));paint.setTextAlign(Paint.Align.CENTER);canvas.drawText(value,x,y,paint);}
  @Override protected void onDraw(Canvas canvas){
-  super.onDraw(canvas);canvas.drawColor(0xfff4f4f2);
-  float toolbar=dp(36),availableWidth=getWidth()-getPaddingLeft()-getPaddingRight(),availableHeight=Math.max(1,getHeight()-getPaddingTop()-getPaddingBottom()-toolbar);
-  scale=Math.min(availableWidth/SkinGeometry.WIDTH,availableHeight/SkinGeometry.HEIGHT);
-  ox=getPaddingLeft()+(availableWidth-SkinGeometry.WIDTH*scale)/2;
-  oy=getPaddingTop()+toolbar+(availableHeight-SkinGeometry.HEIGHT*scale)/2;
-  settingsRect.set(getWidth()-getPaddingRight()-dp(88),getPaddingTop(),getWidth()-getPaddingRight()-dp(8),getPaddingTop()+toolbar);
-  drawSettings(canvas);
-  canvas.save();canvas.translate(ox,oy);canvas.scale(scale,scale);
-  skin(activity.ui.theme(),Math.max(1,Math.min(4,(int)Math.ceil(scale))));
+  super.onDraw(canvas);canvas.drawColor(0xff303431);
+  // Match the full available screen; use exactly the same transform for hit testing.
+  scaleX=getWidth()/329f;scaleY=getHeight()/724f;ox=-8*scaleX;oy=-8*scaleY;
+  canvas.save();canvas.translate(ox,oy);canvas.scale(scaleX,scaleY);
+  skin(activity.ui.theme(),Math.max(1,Math.min(4,(int)Math.ceil(Math.max(scaleX,scaleY)))));
   if(skin!=null&&!skinFailed)canvas.drawBitmap(skin,null,new RectF(0,0,SkinGeometry.WIDTH,SkinGeometry.HEIGHT),paint);
   else{text(canvas,"面板载入失败",172,360,14,0xff555555,false);canvas.restore();return;}
   drawLCD(canvas);
@@ -58,15 +49,11 @@ final class CalculatorView extends View {
   }
   canvas.restore();
  }
- private void drawSettings(Canvas canvas){
-  float cy=settingsRect.centerY(),cx=settingsRect.left+dp(18);paint.setColor(settingsPressed?0xff111111:0xff737574);paint.setStyle(Paint.Style.STROKE);paint.setStrokeWidth(dp(1.5f));
-  canvas.save();canvas.translate(cx,cy);for(int i=0;i<8;i++){canvas.save();canvas.rotate(i*45);canvas.drawLine(0,-dp(10),0,-dp(7),paint);canvas.restore();}canvas.drawCircle(0,0,dp(6.5f),paint);canvas.drawCircle(0,0,dp(2.3f),paint);canvas.restore();paint.setStyle(Paint.Style.FILL);
-  text(canvas,"设置",settingsRect.right-dp(23),cy+dp(4.3f),dp(12),0xff626563,false);
- }
  private void drawLCD(Canvas canvas){
   RectF area=SkinGeometry.LCD;
-  if(!ready){text(canvas,"导入 ROM",area.centerX(),166,12,0xff304336,true);text(canvas,"点击选择 fx-991CN X 固件",area.centerX(),185,7.8f,0xff526354,false);return;}
-  byte[] frame=lcd;int mode=frame[2048]&7,contrast=frame[2049]&63;
+  byte[] menu=activity.settings.frame();
+  if(!ready&&menu==null){text(canvas,"导入 ROM",area.centerX(),166,12,0xff304336,true);text(canvas,"点击选择 fx-991CN X 固件",area.centerX(),185,7.8f,0xff526354,false);return;}
+  byte[] frame=menu!=null?menu:lcd;int mode=frame[2048]&7,contrast=frame[2049]&63;
   if(mode!=4&&mode!=5&&mode!=6)return;
   final String[] names={"S","A","M","STO","Math","D","R","G","FIX","SCI","E","i","∠","▼","◀","▼","▲","▶","Ⅱ","☀"};
   final int[] offsets={0,1,2,3,5,6,7,8,9,10,11,12,13,15,16,17,18,19,21,22};
@@ -83,22 +70,18 @@ final class CalculatorView extends View {
   for(int i=0;i<46;i++){RectF b=RECTS[i];if(i>=42){float dx=x-b.centerX(),dy=y-b.centerY();if(dx*dx+dy*dy<=(b.width()/2+2)*(b.width()/2+2))return i;}else if(x>=b.left-2&&x<b.right+2&&y>=b.top-2&&y<b.bottom+2)return i;}
   return -1;
  }
- void cancelTouch(){handler.removeCallbacks(showSettings);if(active>=0)activity.key(CODES[active],false);active=-1;settingsPressed=false;headerPressed=false;invalidate();}
+ void cancelTouch(){if(active>=0)activity.key(CODES[active],false);active=-1;invalidate();}
  @Override public boolean onTouchEvent(MotionEvent event){
-  float px=event.getX(),py=event.getY(),x=(px-ox)/scale,y=(py-oy)/scale;
+  float x=(event.getX()-ox)/scaleX,y=(event.getY()-oy)/scaleY;
   switch(event.getActionMasked()){
    case MotionEvent.ACTION_DOWN:
-    if(settingsRect.contains(px,py)){settingsPressed=true;invalidate();return true;}
-    if(x>=10&&x<=334&&y>=10&&y<100){headerPressed=true;handler.postDelayed(showSettings,650);return true;}
-    if(!ready&&SkinGeometry.LCD.contains(x,y)){activity.importRom();return true;}
+    if(!ready&&!activity.settings.active()&&SkinGeometry.LCD.contains(x,y)){activity.importRom();return true;}
     active=keyAt(x,y);if(active>=0){activity.key(CODES[active],true);activity.keyFeedback();announceForAccessibility(MAIN[active]);invalidate();}return true;
    case MotionEvent.ACTION_POINTER_DOWN:cancelTouch();return true;
    case MotionEvent.ACTION_MOVE:
-    if(settingsPressed&&!settingsRect.contains(px,py))cancelTouch();
-    if(headerPressed&&(y>=100||x<10||x>334))cancelTouch();
     if(active>=0&&keyAt(x,y)!=active)cancelTouch();return true;
    case MotionEvent.ACTION_UP:
-    boolean open=settingsPressed&&settingsRect.contains(px,py);performClick();cancelTouch();if(open)activity.showSettings();return true;
+    performClick();cancelTouch();return true;
    case MotionEvent.ACTION_CANCEL:cancelTouch();return true;
   }
   return true;
@@ -109,5 +92,5 @@ final class CalculatorView extends View {
   else if(code==KeyEvent.KEYCODE_ENTER)index=19;else if(code==KeyEvent.KEYCODE_DEL)index=3;else if(code==KeyEvent.KEYCODE_DPAD_LEFT)index=46;else if(code==KeyEvent.KEYCODE_DPAD_RIGHT)index=47;else if(code==KeyEvent.KEYCODE_DPAD_UP)index=48;else if(code==KeyEvent.KEYCODE_DPAD_DOWN)index=49;
   if(index>=0){if(event.getRepeatCount()==0){activity.key(CODES[index],true);activity.key(CODES[index],false);activity.keyFeedback();}return true;}return super.onKeyDown(code,event);
  }
- @Override protected void onDetachedFromWindow(){handler.removeCallbacksAndMessages(null);if(skin!=null){skin.recycle();skin=null;}super.onDetachedFromWindow();}
+ @Override protected void onDetachedFromWindow(){if(skin!=null){skin.recycle();skin=null;}super.onDetachedFromWindow();}
 }

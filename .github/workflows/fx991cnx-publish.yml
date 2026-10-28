@@ -22,7 +22,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       GH_REPO: ${{ github.repository }}
       REQUESTED_RUN: ${{ github.event.inputs.run_id }}
-      RELEASE_TAG: fx991cnx-v0.3.0-preview
+      RELEASE_TAG: fx991cnx-v0.4.0-preview
     steps:
       - uses: actions/checkout@v4
       - name: Select the matching build and require success
@@ -69,7 +69,7 @@ jobs:
           BUILD_RUN: ${{ steps.verified.outputs.run }}
         run: |
           if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
-            gh release create "$RELEASE_TAG" --draft --prerelease --target "$VERIFIED_COMMIT" --title 'fx-991CN X Emulator 0.3.0 · 四主题与反馈设置'
+            gh release create "$RELEASE_TAG" --draft --prerelease --target "$VERIFIED_COMMIT" --title 'fx-991CN X Emulator 0.4.0 · 全屏与 LCD 设置'
           fi
           gh release upload "$RELEASE_TAG" verified-artifact/fx991cnx-arm64-release.apk verified-artifact/fx991cnx-source.zip verified-artifact/README.md verified-artifact/BUILD.md verified-artifact/TEST_REPORT.md verified-artifact/THIRD_PARTY_NOTICES.md verified-artifact/LICENSE verified-artifact/SHA256SUMS.txt verified-artifact/VALIDATION.txt verified-artifact/theme-previews.zip --clobber
           cat > /tmp/fx-release-notes.md <<EOF_NOTES
@@ -77,7 +77,7 @@ jobs:
 
           根据用户给出的真机图重做蓝、白、粉、黑四套面板：品牌区与太阳能板、LCD、四瓣方向键、键帽、全套矢量字符及黄/红/蓝色次功能标记。数字、运算符及定积分模板为独立矢量形状。
 
-          右上角“设置”或长按机身顶部：四主题、震动开关及三档强度、按键音开关及音量，自动保存。按键音默认关闭，静音或振动模式下不播放。
+          全屏显示，去掉外部设置栏。SHIFT→MENU 在 LCD 打开设置入口：1 原机设置、2 主题、3 按键、4 关于。数字选择或方向键加等号确认，DEL 返回；主题与反馈自动保存。原机设置交回真实固件，不修改 ROM。按键音默认关闭，静音或振动模式下不播放。
 
           按用户要求，本轮只实际编译及检查签名、16 KiB 对齐、权限和内置资源，**没有执行 Android 运行测试，由用户安装验收**。附件 theme-previews.zip 是静态素材预览，不是设备截图；不宣称像素级完美复刻。
 
